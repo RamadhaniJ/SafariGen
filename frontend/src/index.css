@@ -1,0 +1,103 @@
+
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ===== A4 Print Styles ===== */
+@page {
+  size: A4 portrait;
+  margin: 0; 
+}
+
+
+
+@page {
+  size: A4 portrait;
+  margin: 0;
+}
+
+.pdf-page-fixed {
+  width: 210mm;
+  min-height: 297mm;   /* min-height, SIYO height */
+  position: relative;
+  background: #ffffff;
+  box-sizing: border-box;
+  break-after: page;
+  page-break-after: always;
+}
+
+/* Kwa pages ambazo content yake ni VARIABLE (pricing, policies, day-by-day) */
+.pdf-page-flow {
+  width: 210mm;
+  min-height: 297mm;
+  overflow: visible;   /* MUHIMU: si hidden */
+  position: relative;
+  background: #ffffff;
+  box-sizing: border-box;
+  break-before: page;   /* anza page mpya, lakini iruhusiwe iendelee zaidi ya moja */
+  page-break-before: always;
+}
+
+/* Vipande vidogo pekee ndivyo vinavyolindwa visikatike katikati */
+.avoid-break {
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+h1, h2, h3, h4 {
+  break-after: avoid;
+  page-break-after: avoid;
+}
+
+
+@media print {
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  body {
+    background: white !important;
+  }
+  .pdf-page {
+    box-shadow: none !important;
+  }
+}
+
+@media screen {
+  .pdf-page {
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    margin-bottom: 20px;
+  }
+}
+
+.day-card {
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+
+
+
+.pdf-section {
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+
+
+
+.print-break-inside-avoid {
+  break-inside: avoid;
+  page-break-inside: avoid;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+
+
+.day-section {
+  break-inside: auto;      
+  page-break-inside: auto;
+}
+
+
+
