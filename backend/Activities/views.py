@@ -3,7 +3,7 @@ from rest_framework import generics,status, filters
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.views import APIView
 from Users.authentication import CustomJwtCookiesAuth
-from Users.views import IsStaff
+from Users.view_auth import IsStaffOrManager
 from django.db.models import Q, Case, When, Value, IntegerField
 
 
@@ -13,8 +13,8 @@ from rest_framework.response import Response
 
 class ListActivitiesLocationView( APIView):
     authentication_classes = [CustomJwtCookiesAuth]
-    permission_classes = [IsStaff, IsAuthenticated]
-
+    permission_classes = [IsStaffOrManager, IsAuthenticated]
+ 
 
     def get(self, request):
         search_query = request.query_params.get("search", "").strip()
@@ -47,7 +47,7 @@ class ListActivitiesLocationView( APIView):
 
 class ListActivitiesTypesView( APIView ): 
     authentication_classes = [CustomJwtCookiesAuth]
-    permission_classes = [IsStaff, IsAuthenticated]
+    permission_classes = [IsStaffOrManager, IsAuthenticated]
 
 
     def get(self, request):

@@ -8,6 +8,7 @@ from Itinerary.models import (
          ItineraryPricingSnapshot ,
          
            )
+from Itinerary.Serializer import DayItineraryItemSerializer
 from django.db import transaction
 from django.utils import timezone
 import math
@@ -15,7 +16,7 @@ import uuid
 from Destinations.models import Destination
 from Itinerary.pricing import calculate_and_save_pricing_snapshot
 
-
+ 
 
 class TravellerForEditSerializer(serializers.ModelSerializer):
     class Meta:
@@ -193,6 +194,8 @@ class VersionForEditSerializer(serializers.ModelSerializer):
             "pricing",
         )
 
+
+
     def get_client_info(self, obj):
         serializer = ClientRequestInformationForEditSerializer(obj.client_request)
         return serializer.data
@@ -262,31 +265,29 @@ class RoomInputForEditSerializer(serializers.Serializer):
 
 
 
-
-
 class ClientInfoInputForEditSerializer(serializers.Serializer):
-
     tour_title = serializers.CharField(max_length=250)
     tour_type = serializers.CharField(max_length=100)
     tour_length = serializers.IntegerField(min_value=1)
     tour_start_date = serializers.DateField()
     country_visited = serializers.CharField(max_length=250, required=False, allow_blank=True)
-    start_destination = serializers.IntegerField(required=False, allow_null=True)
-    end_destination = serializers.IntegerField(required=False, allow_null=True)
+    start_destination = serializers.PrimaryKeyRelatedField(queryset=Destination.objects.all(), required=False, allow_null=True)
+    end_destination = serializers.PrimaryKeyRelatedField(queryset=Destination.objects.all(), required=False, allow_null=True)
     request_info = serializers.CharField(required=False, allow_blank=True)
     
     travellers = TravellerInputForEditSerializer(many=True)
     rooms = RoomInputForEditSerializer(many=True)
 
 
-
+ 
 
 
 class EditItinerarySerializer(serializers.Serializer):
 
     client_info = ClientInfoInputForEditSerializer()
+    
     days = serializers.ListField(
-        child=serializers.DictField(),  
+        child=DayItineraryItemSerializer(),  # Reuse the one from your create serializer
         min_length=1
     )
     change_summary = serializers.CharField(required=False, allow_blank=True, default="")
@@ -304,7 +305,7 @@ class EditItinerarySerializer(serializers.Serializer):
 
                 
         try:
-            version = ItineraryVersion.objects.get(id=version_id)
+             version = ItineraryVersion.objects.select_related('client_request__client_requested__company').get(id=version_id)
         except ItineraryVersion.DoesNotExist:
             raise serializers.ValidationError("Version id Not found.")
 
@@ -318,38 +319,67 @@ class EditItinerarySerializer(serializers.Serializer):
                 "You can able to edit only the current version."
             )
 
+        current_user = self.context.get('request').user
+
+        company = version.client_request.client_requested.company
+        is_owner = company.owner == current_user
+        is_member = current_user.companies.filter(id=company.id).exists()
+        
+        if not (is_owner or is_member):
+            raise serializers.ValidationError({"detail": "You don't have access to edit this itinerary."})
+
+
+
         self.context['old_version'] = version
         self.context['client_request'] = version.client_request
-                
+        
         
        
 
         client_info = attrs.get('client_info')
         days = attrs.get('days')
         client_request = version.client_request
-        
 
-        request = self.context.get('request')
-        if request and hasattr(request.user, 'staff_profile'):
-            if client_request.client_requested.created_by != request.user.staff_profile:
-                raise serializers.ValidationError(
-                    "You do not allowed to edit this itinerary."
-                )
+
+
+
+        last_known_destination = client_request.start_destination 
 
         for i, day in enumerate(days):
             day_num = day.get('day_number')
-            dest_id = day.get('destination_id')
             
 
-            if day_num == 1 and not dest_id and client_request.start_destination:
-                day['destination_id'] = client_request.start_destination.id
-            elif day_num == client_info.get('tour_length') and not dest_id and client_request.end_destination:
-                day['destination_id'] = client_request.end_destination.id
+            dest = day.get('destination') or day.get('destination_id')
             
-            if not day.get('destination_id'):
+            if not dest:
+  
+                if day_num == 1 and client_request.start_destination:
+                    day['destination_id'] = client_request.start_destination.id
+                    dest = client_request.start_destination
+                
+
+                elif day_num == client_info.get('tour_length') and client_request.end_destination:
+                    day['destination_id'] = client_request.end_destination.id
+                    dest = client_request.end_destination
+                
+    
+                elif i > 0:
+                    prev_day = days[i-1]
+                    prev_dest = prev_day.get('destination') or prev_day.get('destination_id')
+                    if prev_dest:
+                   
+                        day['destination_id'] = prev_dest.id if hasattr(prev_dest, 'id') else prev_dest
+                        dest = prev_dest
+
+      
+            if not dest:
                 raise serializers.ValidationError(
-                    f"Day {day_num} has no destination."
+                    {f"days[{i}].destination": f"Day {day_num} has no destination. Please select one."}
                 )
+            
+    
+            if dest:
+                last_known_destination = dest
         
         return attrs
 
@@ -360,8 +390,7 @@ class EditItinerarySerializer(serializers.Serializer):
     def create(self, validated_data):
         old_version = self.context['old_version']
         client_request = self.context['client_request']
-        request = self.context.get('request')
-        staff = getattr(request.user, 'staff_profile', None) if request else None
+        current_user = self.context.get('request').user
         
         client_info = validated_data['client_info']
         days_data = validated_data['days']
@@ -380,9 +409,9 @@ class EditItinerarySerializer(serializers.Serializer):
             client_request.request_info = client_info.get('request_info', '')
             
             if client_info.get('start_destination'):
-                client_request.start_destination_id = client_info['start_destination']
+                client_request.start_destination = client_info['start_destination']
             if client_info.get('end_destination'):
-                client_request.end_destination_id = client_info['end_destination']
+                client_request.end_destination = client_info['end_destination']
             
             client_request.save()
             
@@ -427,7 +456,7 @@ class EditItinerarySerializer(serializers.Serializer):
                 is_current=True,
                 based_on=old_version,
                 change_summary=change_summary,
-                created_by=staff,
+                created_by=current_user,
                 
                 # SNAPSHOT FIELDS (Muhimu!)
                 snapshot_tour_title=client_info['tour_title'],
@@ -437,8 +466,9 @@ class EditItinerarySerializer(serializers.Serializer):
                 snapshot_tour_start_date=client_info['tour_start_date'],
                 snapshot_travellers_json=list(client_info['travellers']),
                 snapshot_rooms_json=list(client_info['rooms']),
-                snapshot_start_destination_id=client_info.get('start_destination'),
-                snapshot_end_destination_id=client_info.get('end_destination'),
+
+                snapshot_start_destination=client_info.get('start_destination'),
+                snapshot_end_destination=client_info.get('end_destination'),
             )
             
             # ==========================================
@@ -452,11 +482,17 @@ class EditItinerarySerializer(serializers.Serializer):
             )
             
             for day_data in days_data:
+                dest_id = day_data.get("destination_id")
+                dest_obj = day_data.get("destination")
+                final_destination = dest_obj if dest_obj else None
+
                 itinerary_day = MainDayByDayItinerary.objects.create(
                     version=new_version,
                     day_number=day_data['day_number'],
                     nights_number=day_data.get('nights', 1),
-                    destination_id=day_data['destination_id'],
+                    destination=final_destination,
+                    destination_id=dest_id if not final_destination else None,
+
                     accommodation_id=day_data.get('accommodation_id'),
                     included_meals=", ".join(day_data.get('included_meals', []))
                 )
@@ -521,7 +557,7 @@ class EditItinerarySerializer(serializers.Serializer):
             snapshot = calculate_and_save_pricing_snapshot(
                 itinerary_version=new_version,
                 commission_percentage=commission_pct,
-                staff_profile=staff
+                current_user=current_user
             )
             
             # Update grand total kwenye ClientRequestInformation (kwa summary)

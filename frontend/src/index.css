@@ -81,9 +81,24 @@ h1, h2, h3, h4 {
 .pdf-section {
   box-decoration-break: clone;
   -webkit-box-decoration-break: clone;
+
+  background-repeat: repeat;
+  background-attachment: scroll;
 }
 
 
+
+.pdf-section h1,
+.pdf-section h2,
+.pdf-section h3 {
+  break-after: avoid;
+  page-break-after: avoid;
+}
+
+.pdf-section [data-keep-together] {
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
 
 .print-break-inside-avoid {
   break-inside: avoid;

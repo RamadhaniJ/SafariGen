@@ -6,7 +6,7 @@ import math
 from django.db.models import Sum
 import random
 
-
+ 
 from Activities.models import ActivityLocation, ActivityType, Activity
 from Destinations.models import Destination
 from Configuration.models import HeroSectionImages
@@ -17,6 +17,7 @@ from Itinerary.models import (MainDayByDayItinerary,
                                ItineraryPricingSnapshot, ItineraryVersion)
 from Meal.models import OptionalMeal, MealPlan
 from Accommodation.models import Accommodation, AccommodationRoomType
+from ActivityLog.models import ActivitiesLogs
 from Clients.models import ClientRequestInformation, Traveller
 from Itinerary.pricing import calculate_and_save_pricing_snapshot
 
@@ -111,18 +112,23 @@ class BulkItineraryCreateSerializer(serializers.Serializer):
     def validate(self, attrs):
         client_id  = attrs.get("client_id")
         days_data = attrs.get("days")
+        user = self.context.get("request").user
+        new_tour_length = attrs.get("new_tour_length")
+
 
 
         try:
             client = ClientRequestInformation.objects.select_related("client_requested").get(id = client_id)
         except ClientRequestInformation.DoesNotExist:
             raise serializers.ValidationError("Client request information not found")
+        
 
-
-        request = self.context.get("request")
-        if request and hasattr(request.user, "staff_profile"):
-            if client.client_requested.created_by != request.user.staff_profile:
-                raise serializers.ValidationError("You do not have permission to modify this client's itinerary")
+        is_owner = client.client_requested.company.owner == user
+        is_member = user.companies.filter(id = client.client_requested.company.id).exists()
+        if not (is_owner or is_member):
+            raise serializers.ValidationError(
+                {"detail": "You don't have access to create this Itinerary."}
+            )
 
 
         total_travellers = sum(
@@ -131,6 +137,10 @@ class BulkItineraryCreateSerializer(serializers.Serializer):
 
         attrs["client_instance"] = client
         attrs["total_travellers"] = total_travellers
+
+
+
+
 
         for day in days_data:
             day_num = day["day_number"]
@@ -149,7 +159,7 @@ class BulkItineraryCreateSerializer(serializers.Serializer):
 
 
         return attrs
-
+ 
 
     def create(self, validated_data):
         client = validated_data["client_instance"]
@@ -166,9 +176,9 @@ class BulkItineraryCreateSerializer(serializers.Serializer):
                  client_request = client,
                  is_current = True
             ).update( is_current=False)
-
+ 
             latest_version = ItineraryVersion.objects.filter(
-                client_request = client
+                client_request = client 
             ).order_by("-version_number").first()
  
             next_version_number = 1 if not latest_version else latest_version.version_number + 1
@@ -180,7 +190,23 @@ class BulkItineraryCreateSerializer(serializers.Serializer):
                 based_on = latest_version,
                 status="DRAFT",
                 change_summary= change_summary,
-                created_by = getattr(self.context.get("request").user, "staff_profile", None)
+                created_by = getattr(self.context.get("request"), "user", None),
+
+                snapshot_tour_title=client.tour_title,
+                snapshot_tour_type=client.tour_type,
+                snapshot_tour_country_visited=client.country_visited,
+                snapshot_tour_length=new_tour_length,
+                snapshot_tour_start_date=client.tour_start_date,
+                snapshot_travellers_json=list(
+                    client.travellers.values('age_category', 'number', 'is_resident')
+                ),
+                snapshot_rooms_json=list(
+                    client.room_selected.values('label', 'number')
+                ),
+                snapshot_start_destination=client.start_destination,
+                snapshot_end_destination=client.end_destination,
+
+
 
             )
 
@@ -259,12 +285,36 @@ class BulkItineraryCreateSerializer(serializers.Serializer):
                 )
 
 
-            staff = getattr(self.context.get("request").user, "staff_profile", None)
+            
+
+            current_user = getattr(self.context.get("request"), "user", None)
             snapshot = calculate_and_save_pricing_snapshot(
                 itinerary_version=new_version,
                 commission_percentage=commission_pct,
-                staff_profile=staff
+                current_user=current_user
             )
+
+            if client.client_requested.created_by != current_user:
+                ActivitiesLogs.objects.create(
+                    client = client.client_requested,
+                    client_request = client,
+                    actor=current_user,
+                    itinerary_version= new_version,
+                    action="CREATED",
+                    changes={
+                        "tour_title": new_version.snapshot_tour_title,
+                        "status" : new_version.status,
+                        "version_number": new_version.version_number,
+
+                    },
+                    module="ITINERARY",
+                    description=(
+                                f"{current_user.full_name or current_user.email} created itinerary version "
+                                f"{next_version_number} for client {client.client_requested.first_name} {client.client_requested.last_name} "
+                                f"(Client originally created by {client.client_requested.created_by.full_name or client.client_requested.created_by.email})"
+                            )
+                )
+                
         return {"success":True, 
                 "message":f"Itinerary Version {next_version_number} saved successfully", 
                 "client_id": str(client.id),
@@ -286,7 +336,22 @@ class BulkItineraryCreateSerializer(serializers.Serializer):
 
 
 
-    # 1. Activities preview          
+
+    # ============PREVIEW========================================
+    # 1. Activities preview   
+    # ========================================================       
+
+
+
+
+
+
+
+
+
+
+
+
 
 class ActivitiesPreviewSerializer(serializers.ModelSerializer):
     activity_type_name = serializers.CharField(
@@ -623,6 +688,9 @@ class DayByDayPreviewSerializer(serializers.ModelSerializer):
 
 
 
+
+
+
 class ClientInformationPreviewSerializer(serializers.ModelSerializer):
     tour_code = serializers.ReadOnlyField(source="client_request.tour_code")
     
@@ -641,10 +709,17 @@ class ClientInformationPreviewSerializer(serializers.ModelSerializer):
     start_destination = serializers.ReadOnlyField(source="snapshot_start_destination.name")
     end_destination = serializers.ReadOnlyField(source="snapshot_end_destination.name")
     
-    staff_full_name = serializers.ReadOnlyField(source="client_request.client_requested.created_by.full_name", allow_null=True)
-    staff_phone = serializers.ReadOnlyField(source="client_request.client_requested.created_by.phone_number", allow_null=True)
-    staff_email = serializers.ReadOnlyField(source="client_request.client_requested.created_by.user.email", allow_null=True)
-    staff_company = serializers.ReadOnlyField(source="client_request.client_requested.created_by.user.company_name", allow_null=True)
+    #_________________COMPANY INFO________________
+    creator_full_name = serializers.ReadOnlyField(source="created_by.full_name", allow_null=True)
+    company_phone = serializers.ReadOnlyField(source="client_request.client_requested.company.phone_number", allow_null=True)
+    company_email = serializers.ReadOnlyField(source="client_request.client_requested.company.email", allow_null=True)
+    company_name = serializers.ReadOnlyField(source="client_request.client_requested.company.name", allow_null=True)
+    company_website = serializers.ReadOnlyField(source="client_request.client_requested.company.website", allow_null=True)
+    company_country = serializers.ReadOnlyField(source="client_request.client_requested.company.country", allow_null=True)
+    company_logo = serializers.SerializerMethodField()
+
+    #____________________________________________________
+
     
     total_travellers = serializers.SerializerMethodField(allow_null=True, required=False)
     safari_grand_total = serializers.SerializerMethodField(allow_null=True, required=False)
@@ -654,10 +729,24 @@ class ClientInformationPreviewSerializer(serializers.ModelSerializer):
         model = ItineraryVersion
         fields = (
             "tour_code", "tour_title", "tour_length", "tour_start_date",
+
             "safari_grand_total", "price_per_personal",
+
             "country_visited", "tour_type", "start_destination", "end_destination",
             "salutation", "first_name", "last_name",
-            "staff_full_name", "staff_phone", "staff_email", "staff_company",
+
+            #_________COMPANY____DATA:
+            "creator_full_name",
+            "company_phone",
+            "company_email",
+            "company_name",
+            "company_website",
+            "company_country",
+            "company_logo",
+
+
+
+
             "total_travellers"
         )
 
@@ -707,6 +796,16 @@ class ClientInformationPreviewSerializer(serializers.ModelSerializer):
             return str(obj.version_pricing_snapshot.price_per_person)
         except Exception:
             return None
+
+    def get_company_logo(self, obj):
+        if obj.client_request.client_requested.company.logo:
+            request = self.context.get("request")
+            if request:
+                return request.build_absolute_uri(obj.client_request.client_requested.company.logo.url)
+            else:
+                return obj.client_request.client_requested.company.logo.url
+            
+        return None
 
 
 
@@ -823,7 +922,8 @@ class MainItineraryPreviewSerializer(serializers.Serializer):
 
 
 
-# 1. Serializer kwa ajili ya Breakdown Items (Siku kwa siku)
+#======================================================================
+# 1. Serializer kwa ajili ya Pricing Breakdown Items (Siku kwa siku)
 class PricingBreakdownItemSerializer(serializers.ModelSerializer):
     class Meta:
         model = ItineraryPricingBreakdownItem
@@ -837,12 +937,12 @@ class PricingBreakdownItemSerializer(serializers.ModelSerializer):
 class PricingSnapshotSerializer(serializers.ModelSerializer):
     
 
-    generated_by_email = serializers.CharField(
-        source="generated_by.user.email", 
+    generated_by = serializers.CharField(
+        source="generated_by.full_name", 
         read_only=True, 
         default=None
     )
-    
+     
 
     breakdown_items = PricingBreakdownItemSerializer(many=True, read_only=True)
 
@@ -861,7 +961,7 @@ class PricingSnapshotSerializer(serializers.ModelSerializer):
             "commission_amount",
             "grand_total",
             "price_per_person",
-            "generated_by_email",
+            "generated_by",
             "breakdown_items",  
             "created_at",
             "updated_at"
@@ -883,7 +983,7 @@ class PricingSnapshotSerializer(serializers.ModelSerializer):
 
 
 # ==========================================
-# 1. VERSION DETAIL SERIALIZER 
+# 1. VERSION DETAIL SERIALIZER  (list)
 # ==========================================
 class VersionDetailSerializer(serializers.ModelSerializer):
     tour_code = serializers.CharField(source="client_request.tour_code")
@@ -893,8 +993,8 @@ class VersionDetailSerializer(serializers.ModelSerializer):
     sent_count = serializers.SerializerMethodField()
     client_name = serializers.SerializerMethodField()
 
-    created_by = serializers.ReadOnlyField(source="created_by.user.email")
-    
+    created_by = serializers.ReadOnlyField(source="created_by.full_name")
+     
     class Meta:
         model = ItineraryVersion
         fields = (

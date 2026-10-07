@@ -13,6 +13,11 @@ class ListCommunicationChannelSerializer(serializers.ModelSerializer):
 
 
 
+class EmailTemplateListSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = EmailTemplate
+        fields = ("id", "name","subject","body_html")
+
 
 
 
@@ -21,13 +26,10 @@ class ListCommunicationChannelSerializer(serializers.ModelSerializer):
 class ItineraryEmailSendSerializer(serializers.Serializer):
     version_id = serializers.UUIDField(required=True)
     channel_id = serializers.UUIDField(required=True)
-     
-    # Backend ita-override hii na email sahihi ya database, 
-    # lakini tunaiacha hapa ili serializer iweze ku-validate kuwa ni email valid format.
-    recipient = serializers.EmailField(required=False, allow_blank=True)
+    template_id = serializers.UUIDField(required=True)  
     
-    subject = serializers.CharField(max_length=255, required=False, allow_blank=True)
-    body_html = serializers.CharField(required=False, allow_blank=True)
+    subject = serializers.CharField(max_length=255, required=True)
+    body_html = serializers.CharField(required=True)  
     custom_note = serializers.CharField(required=False, allow_blank=True, max_length=1000)
 
     def validate_channel_id(self, value):
@@ -41,19 +43,19 @@ class ItineraryEmailSendSerializer(serializers.Serializer):
 
     def validate_version_id(self, value):
         try:
-            # Tunatumia select_related kupunguza database queries (Performance boost!)
             return ItineraryVersion.objects.select_related(
                 'client_request__client_requested',
-                'created_by__user'
+                'created_by'
             ).get(id=value)
         except ItineraryVersion.DoesNotExist:
             raise serializers.ValidationError("Itinerary version not found.")
+    
+    def validate_template_id(self, value):
+        try:
+            return EmailTemplate.objects.get(id=value, is_active=True)
+        except EmailTemplate.DoesNotExist:
+            raise serializers.ValidationError("Invalid or inactive email template.")
 
 
-
-
-class EmailTemplateListSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = EmailTemplate
-        fields = ("id", "name","subject","body_html")
+        
         

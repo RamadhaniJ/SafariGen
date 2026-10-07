@@ -4,7 +4,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from Meal.Serializer import MealPlanToListSerializer
 from Users.authentication import CustomJwtCookiesAuth
-from Users.views import IsStaff
+from Users.view_auth import IsStaffOrManager
 
 from Meal.models import MealPlan
 
@@ -13,7 +13,7 @@ from Meal.models import MealPlan
 
 class MealPlanListView(generics.ListAPIView):
     authentication_classes = [CustomJwtCookiesAuth]
-    permission_classes = [IsAuthenticated, IsStaff]
+    permission_classes = [IsAuthenticated, IsStaffOrManager]
     serializer_class = MealPlanToListSerializer
     
     filter_backends = [filters.SearchFilter]

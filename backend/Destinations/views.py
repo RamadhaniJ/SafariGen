@@ -1,6 +1,6 @@
 from django.shortcuts import render
 from Destinations.Serializer import DestinationListSerializer
-from Users.views import IsStaff, IsManager
+from Users.view_auth import IsStaffOrManager, IsManager, IsStaff
 from Users.authentication import CustomJwtCookiesAuth
 from Destinations.models import Destination
 from rest_framework.views import APIView
@@ -17,7 +17,7 @@ from django.db.models import Q, Case, When, Value, IntegerField
 
 class ListDestinationTosearchView(APIView):
     authentication_classes = [CustomJwtCookiesAuth]
-    permission_classes = [IsAuthenticated, IsStaff]
+    permission_classes = [IsAuthenticated, IsStaffOrManager]
 
     def get(self, request):
         client_request_id = request.query_params.get("client_id")

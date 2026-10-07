@@ -1,19 +1,41 @@
 from rest_framework import serializers
 from Clients.models import ClientInformation, ClientRequestInformation, Traveller, RoomSelection
+from Users.models import Company, CustomUserModel
+from ActivityLog.models import ActivitiesLogs
 from Destinations.models import Destination
 from django.utils import timezone
 from django.db import transaction
 from Configuration.models import ConfigurationData
 
-import math
+import math 
+ 
  
 
-# 1. CREATE A CLIENTS INFORMATIONS 
+ 
+def track_model_changes(instance, validated_data):
+    changes = {}
+    for field, new_value in validated_data.items():
+        old_value = getattr(instance, field)
+        if old_value != new_value:
+             changes[field] = {
+                                "from": str(old_value) if old_value is not None else None,
+                                "to": str(new_value) if new_value is not None else None
+                            }
+    return changes
+  
+
+
+# ===================== STEP 1. CREATE A CLIENTS INFORMATIONS 
 class ClientInformationSerializer(serializers.ModelSerializer):
+    company = serializers.PrimaryKeyRelatedField(
+            required=True,
+            queryset= Company.objects.all(),
+        )
+
     class Meta:
         model = ClientInformation
         fields = (
-            "id","created_by","email",
+            "id", "company", "created_by", "email",
 
             "salutation","first_name","last_name",
 
@@ -25,43 +47,135 @@ class ClientInformationSerializer(serializers.ModelSerializer):
         )
 
     def validate(self, attrs):
+        user = self.context.get("request").user
+        company = attrs.get("company")
+
+
         email = attrs.get("email")
-        instance = getattr(self, "instance", None)
-        if (ClientInformation.objects.filter(email=email).exclude(id = getattr(instance, "id", None)).exists()):
+        email_qs = ClientInformation.objects.filter(email__iexact=email)
+        if self.instance:
+            email_qs = email_qs.exclude(id = self.instance.id)
+        if email_qs.exists():
             raise serializers.ValidationError("It seem you already have this client. Select them to proceed.")
+
+
+
+        if company.status != "VERIFIED":
+            raise serializers.ValidationError("Client must originate from a verified company. ")
+
+        is_owner = company.owner == user
+        is_member = user.companies.filter(pk = company.pk).exists()
+        
+        if not (is_owner or is_member):
+            raise serializers.ValidationError("You don't have access to this company.")
+        
         return super().validate(attrs)
 
     
 
     def create(self, validated_data):
         user = self.context.get("request").user
-        staff =  getattr(user, "staff_profile", None)
-        if staff is None:
-            raise serializers.ValidationError("You are not allowed here!.")
-
-        validated_data["created_by"] = staff
+        validated_data["created_by"] = user
         return super().create(validated_data)
 
 
     def update(self, instance, validated_data):
-        staff = getattr(self.context.get("request").user, "staff_profile", None)
-        if staff is None:
-            raise serializers.ValidationError("You are not allowed here")
+        user = getattr(self.context.get("request"), "user", None)
 
-        if instance.created_by != staff:
-            raise serializers.ValidationError("You are not allowed to update this Client")
+        new_company = validated_data.get("company")
+        is_owner = instance.company.owner == user
+        is_member = user.companies.filter(pk = instance.company.pk).exists()
         
-        return super().update(instance, validated_data)
+        if not (is_owner or is_member):
+                raise serializers.ValidationError(
+                    {"detail": "You don't have access to update this client."}
+                )
+    
+
+        if new_company and new_company != instance.company:
+            is_new_owner = new_company.owner == user
+            is_new_member = user.companies.filter(id = new_company.id).exists()
+
+            if not (is_new_member or is_new_owner):
+                raise serializers.ValidationError(
+                      {"detail": "You don't have access to update this client."}
+                    )
+
+
+
+
+        with transaction.atomic():
+                changes = track_model_changes(instance=instance, validated_data=validated_data)
+                updated_instance = super().update(instance, validated_data)
+
+                if instance.created_by != user:
+
+                   if changes:
+                        ActivitiesLogs.objects.create(
+                            client = updated_instance,
+                            actor = user,
+                            action = "UPDATED",
+                            changes = changes,
+                            module = "CLIENT",
+                            description=f"{user.full_name or user.email} updated this client. (Originally created by {instance.created_by.full_name or instance.created_by.email})"
+                        )
+
+        return updated_instance
+
+ 
+
+
+
+class ShortCompanyInfoToCreateClientSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Company
+        fields = (
+            "id","owner","name","logo"
+        )
+
+
+
+class ClientInformationListSerializer(serializers.ModelSerializer):
+    company_id = serializers.UUIDField(source="company.id")
+    company_name = serializers.CharField(source="company.name")
+    company_logo = serializers.SerializerMethodField()
+    created_by = serializers.CharField(source="created_by.full_name")
+
+    user_role = serializers.CharField(source="created_by.role")
+    class Meta:
+        model = ClientInformation
+        fields = (
+                    "id",
+                      "company_name","company_logo","company_id",
+                     
+                      "created_by","user_role",
+
+                      "email", "salutation","first_name","last_name",
+                    "country","phone","source","created_at"
+                )
+
+    def get_company_logo(self, obj):
+            if  obj.company.logo:
+                  request = self.context.get("request")
+                  if request:
+                      return request.build_absolute_uri(obj.company.logo.url)
+                  else:
+                    return obj.company.logo.url
+        
+
+
+
+
 
  
 
 
 
 
+
  
 
-
-
+# ======================= STEP 2.
 
 class TravellerSerializer(serializers.ModelSerializer):
     class Meta:
@@ -79,11 +193,11 @@ class RoomSelectionSerializer(serializers.ModelSerializer):
 
 
 
-
+ 
  
 
-# 2. REQUEST CLIENT INFORMATION
-class ClientRequestInformationSerializer(serializers.ModelSerializer):
+#______________________________ 2. CLIENT REQUEST INFORMATION
+class CreateClientRequestInformationSerializer(serializers.ModelSerializer):
     start_destination = serializers.PrimaryKeyRelatedField(
         queryset = Destination.objects.all()
     )
@@ -125,11 +239,22 @@ class ClientRequestInformationSerializer(serializers.ModelSerializer):
     
  
     def validate(self, attrs):
+        user = self.context.get("request").user
+        client = attrs.get("client_requested")
         start_date = attrs.get("tour_start_date")
         current_date = timezone.now().date()
 
-        if start_date < current_date:
-            raise serializers.ValidationError("Start date can not be the previous date")
+        is_owner = client.company.owner == user
+        is_member = user.companies.filter(id = client.company.id).exists()
+
+        if not (is_owner or is_member):
+            raise serializers.ValidationError(
+                {"client_requested": "You don't have access to this client's company."}
+            )
+
+
+        if start_date and start_date < current_date:
+            raise serializers.ValidationError("Start date cannot be in the past.")
         
         return super().validate(attrs)
 
@@ -137,19 +262,14 @@ class ClientRequestInformationSerializer(serializers.ModelSerializer):
 
     @transaction.atomic
     def create(self, validated_data):
-        staff = getattr(self.context.get("request").user, "staff_profile", None)
-        if staff is None:
+        current_user = getattr(self.context.get("request"), "user", None)
+        if current_user is None:
             raise serializers.ValidationError("You are not allowed here")
 
         client = validated_data.get("client_requested")
-
-        if client.created_by != staff:
-            raise serializers.ValidationError("You are not allowed to create a tour info for this client")
-
-
         travellers_data = validated_data.pop('travellers', [])
         rooms_data = validated_data.pop("room_selected", [])
-
+  
      
         request_instance = super().create(validated_data)
 
@@ -166,53 +286,102 @@ class ClientRequestInformationSerializer(serializers.ModelSerializer):
             )
 
 
+    
+        if client.created_by != current_user:
+                ActivitiesLogs.objects.create(
+                    client = client,
+                    client_request = request_instance,
+                    actor = current_user,
+                    action = "CREATED",
+                    changes = {
+                            "tour_code": request_instance.tour_code,
+                            "tour_title": request_instance.tour_title,
+                            "tour_type": request_instance.tour_type,
+                        },
+                    module = "REQUEST",
+                    description=(
+                                f"{current_user.full_name or current_user.email} created a request for "
+                                f"client {client.first_name} {client.last_name} "
+                                f"(Client originally created by {client.created_by.full_name or client.created_by.email})"
+                            )
+                )
+
+
+
+
         return request_instance
-
-
     
 
     @transaction.atomic
     def update(self, instance, validated_data):
-        if instance.client_requested.created_by != self.context.get("request").user.staff_profile:
-            raise serializers.ValidationError("You are not allowed to update this client")
+        user = self.context.get("request").user
+        client = instance.client_requested
 
-        room_data = validated_data.pop("room_selected", [])
-        traveller_data = validated_data.pop("travellers", [])
+        is_owner = client.company.owner == user
+        is_member = user.companies.filter(id = client.company.id).exists()
 
+        if not (is_owner or is_member):
+            raise serializers.ValidationError(
+                {"detail": "You don't have access to update this request."}
+            )
 
+        travellers_data = validated_data.pop('travellers', None)
+        rooms_data = validated_data.pop("room_selected", None)
 
-        request_update = super().update(instance, validated_data)
-
-        if room_data is not None: 
-            RoomSelection.objects.filter( 
-                request = request_update
-            ).delete()
-
-
-            for room in room_data:
-                RoomSelection.objects.create(
-                    request = request_update,
-                    **room
-                )
-
-  
+        with transaction.atomic():
+            changes = track_model_changes(instance, validated_data)
+            updated_instance = super().update(instance, validated_data)
 
 
-        if traveller_data is not None:
-            Traveller.objects.filter(request = request_update).delete()
+            if travellers_data is not None:
+                instance.travellers.all().delete()
+
+                for traveller in travellers_data:
+                    Traveller.objects.create(
+                        request=updated_instance,
+                        **traveller
+                    )
+
+            if rooms_data is not None:
+                instance.room_selected.all().delete()
+
+                for room in rooms_data:
+                    RoomSelection.objects.create(
+                        request=updated_instance,
+                        **room
+                    )
+
+            
+
+            if client.created_by != user:
+                
+                if changes:
+                    ActivitiesLogs.objects.create(
+                        client=client,
+                        client_request=updated_instance,
+                        actor=user,
+                        action="UPDATED",
+                        changes=changes,
+                        module="REQUEST",
+                        description=(
+                            f"{user.full_name or user.email} updated request for "
+                            f"client {client.first_name} {client.last_name} "
+                            f"(Client created by {client.created_by.full_name or client.created_by.email})"
+                        )
+                    )
+        return updated_instance
 
 
-            for traveller in traveller_data:
-                Traveller.objects.create(
-                    request=request_update,
-                    **traveller
-                )
 
-        return request_update
+    
 
 
 
 
+
+
+
+#______________________________________STEP: 3. PREVIEW _______________________
 class ClientInformationToPreviewSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(source="client_requested.email", required=False)
     salutation = serializers.CharField(source="client_requested.salutation", required=False)
@@ -246,7 +415,7 @@ class ClientInformationToPreviewSerializer(serializers.ModelSerializer):
             "start_destination","end_destination","request_info",
 
             "travellers","room_selected"
-
+ 
 
         )
 
@@ -262,7 +431,7 @@ class SmallClientInfoToBuildItinerarySerializer(serializers.ModelSerializer):
     travellers = TravellerSerializer(many=True, required=False)
     room_selected = RoomSelectionSerializer(many=True, required=False)
 
-
+ 
 
     vehicle_rent_pricing = serializers.SerializerMethodField()
 
@@ -289,3 +458,6 @@ class SmallClientInfoToBuildItinerarySerializer(serializers.ModelSerializer):
                 return {"vehicle_rent_pricing": float(config.vehicle_rent_pricing)}
 
             return {"vehicle_rent_pricing": 250.00} 
+
+
+

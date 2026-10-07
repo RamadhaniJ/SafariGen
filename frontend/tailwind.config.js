@@ -8,7 +8,7 @@ export default {
     { pattern: /^print:/ }, // keep ALL print: variants
   ],
   theme: {
-    extend: {},
+    extend: { },
   },
   plugins: [],
 }

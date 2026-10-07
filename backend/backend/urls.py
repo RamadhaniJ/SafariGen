@@ -34,7 +34,9 @@ urlpatterns = [
 
     path("api/meals/", include("Meal.urls")),
 
-    path("api/communications/", include("Communication.urls"))
+    path("api/communications/", include("Communication.urls")),
+
+    path("api/activities-logs/", include("ActivityLog.urls")),
 ]
 
  

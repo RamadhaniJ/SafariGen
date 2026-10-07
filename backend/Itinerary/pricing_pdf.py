@@ -15,7 +15,7 @@ def generate_pricing_pdf(request, client_id, version_id):
     try:
         snapshot = ItineraryPricingSnapshot.objects.select_related(
                "version__client_request", 
-               "generated_by__user"
+               "generated_by"
            ).prefetch_related(
                "breakdown_items"
            ).get(
@@ -29,7 +29,7 @@ def generate_pricing_pdf(request, client_id, version_id):
     tour_title = html.escape(snapshot.version.client_request.tour_title or "Safari Proposal")
     client_name = f"{snapshot.version.client_request.client_requested.salutation}. {snapshot.version.client_request.client_requested.first_name} {snapshot.version.client_request.client_requested.last_name}".strip()
     client_name = html.escape(client_name or "Valued Guest")
-    company_name = getattr(getattr(snapshot.version.client_request.client_requested, "created_by", None), "company_name", None) or "ACE Safaris Ltd."
+    company_name = getattr(getattr(snapshot.version.client_request.client_requested, "company", None), "name", None) or "ACE Safaris Ltd."
     company_name = html.escape(company_name)
 
 
@@ -43,7 +43,7 @@ def generate_pricing_pdf(request, client_id, version_id):
             )
 
             context = browser.new_context(
-                viewport={"width": 1280, "height": 900},
+                viewport={"width": 1280, "height": 1600},
                 device_scale_factor=2,
                 locale="en-US",
             )
@@ -69,8 +69,9 @@ def generate_pricing_pdf(request, client_id, version_id):
             except PlaywrightTimeout:
                 print("⚠️ PRICING_PDF_READY never set — dumping page content:")
                 print(page.content()[:3000])
-                page.wait_for_timeout(3000)
+                page.wait_for_timeout(10000)
 
+            page.wait_for_load_state("networkidle")
             page.wait_for_timeout(1500)
 
             footer_template = f"""
@@ -87,6 +88,7 @@ def generate_pricing_pdf(request, client_id, version_id):
                 </div>
             </div>
             """
+
 
             pdf_bytes = page.pdf(
                 format="A4",

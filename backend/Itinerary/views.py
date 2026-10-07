@@ -9,22 +9,23 @@ from rest_framework import generics, status
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.views import APIView
-from rest_framework.exceptions import NotFound
+from rest_framework.exceptions import NotFound, PermissionDenied
 
-
+ 
 from Users.authentication import CustomJwtCookiesAuth
-from Users.views import IsStaff
+from Users.view_auth import IsStaffOrManager
 from Clients.models import ClientRequestInformation
 from Itinerary.models import MainDayByDayItinerary , ItineraryPricingSnapshot, ItineraryVersion
 from Configuration.models import HeroSectionImages
 from Communication.models import CommunicationLog
+from ActivityLog.models import ActivitiesLogs
 import random
 
 # Create your views here.
 
 class BulkCreateDayByDayItineraryView(generics.CreateAPIView):
     authentication_classes = [CustomJwtCookiesAuth]
-    permission_classes = [IsStaff, IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsStaffOrManager]
     serializer_class = BulkItineraryCreateSerializer
 
     def create(self, request, *args, **kwargs):
@@ -47,12 +48,22 @@ class BulkCreateDayByDayItineraryView(generics.CreateAPIView):
 
 
 
+
 class DeleteSpecificItineraryVersionView(APIView):
     authentication_classes = [CustomJwtCookiesAuth]
-    permission_classes = [IsAuthenticated, IsStaff]
+    permission_classes = [IsAuthenticated, IsStaffOrManager]
 
     def delete(self, request, version_id):
+        user = request.user
         version = get_object_or_404(ItineraryVersion, id = version_id) 
+
+        is_owner = version.client_request.client_requested.company.owner == user
+        is_member = user.companies.filter(id = version.client_request.client_requested.company.id).exists()
+        if not (is_owner or is_member):
+                    raise PermissionDenied(
+                        {"detail": "You don't have access to delete this Itinerary."}
+                    )
+ 
 
         if version.is_current:
             return Response(
@@ -62,8 +73,33 @@ class DeleteSpecificItineraryVersionView(APIView):
 
         else:
 
+            client = version.client_request.client_requested
+            version_num = version.version_number
+            tour_title = version.snapshot_tour_title or "Unknown Tour"
+
+            ActivitiesLogs.objects.create(
+                    client = client,
+                    client_request = version.client_request,
+                    actor=user,
+                    itinerary_version= version,
+                    action="DELETED",
+                    changes={
+                        "tour_title": tour_title,
+                        "version_number": version_num,
+
+                    },
+                    module="ITINERARY",
+                    description=(
+                       f"{user.full_name or user.email} deleted itinerary version {version_num} "
+                      f"for client {client.first_name} {client.last_name}. "
+                      f"(Client originally created by {client.created_by.full_name or client.created_by.email if client.created_by else 'Unknown'})"
+            )
+                )
+
             version_id = version.id
             version.delete()
+            
+                
 
             return Response(
                 {
@@ -75,18 +111,25 @@ class DeleteSpecificItineraryVersionView(APIView):
 
 
 
-# List itinerary data with version to Staff?
+
+
+
+#=================================================
+# List itinerary data with version ?
+#____________________LIST & VERSIONING________________
+#======================================================
 
 class ListItineraryWithVersionView(generics.ListAPIView):
         authentication_classes = [CustomJwtCookiesAuth]
-        permission_classes = [IsAuthenticated, IsStaff]
+        permission_classes = [IsAuthenticated, IsStaffOrManager]
         serializer_class = ClientContainerSerializer
     
         def get_queryset(self):
             user = self.request.user
+            current_user_companies = user.companies.values_list('id', flat=True)
             
             queryset = ClientRequestInformation.objects.filter(
-                client_requested__created_by=user.staff_profile
+                client_requested__company_id__in=current_user_companies
             ).select_related(
                 'client_requested',
                 'start_destination',
@@ -118,6 +161,7 @@ class ListItineraryWithVersionView(generics.ListAPIView):
 
 # List itinerary data with version to Staff?
 
+  
 
 
 
@@ -126,25 +170,25 @@ class ListItineraryWithVersionView(generics.ListAPIView):
 
 
 
-
+#====================================================
+#--------------------MAIN PREVIEW ---------------------======
+#====================================================
 class PreviewClientSafariItineraryView(APIView):
 
     permission_classes = [AllowAny]  
 
     def get(self, request, client_id, version_id):
         try:
-            # 1. Tafuta VERSION YA SASA (is_current=True) ya client huyu
             version = ItineraryVersion.objects.select_related(
                 "client_request__client_requested",
-                "client_request__client_requested__created_by__user",
+                "client_request__client_requested__created_by",
                 "client_request__start_destination",
                 "client_request__end_destination",
-                "version_pricing_snapshot"  # <-- Jina jipya sahihi
+                "version_pricing_snapshot"  
             ).prefetch_related(
                 "client_request__travellers",
                 "client_request__room_selected",
-                
-                # Badilisha client_daybyday kuwa version_daybyday
+
                 "version_daybyday__destination__destination_images",
                 "version_daybyday__destination__destination_desc",
 
@@ -165,7 +209,6 @@ class PreviewClientSafariItineraryView(APIView):
                 status=status.HTTP_404_NOT_FOUND
             )
 
-        # 2. Context kwa ajili ya Serializer (kuepuka kuirudia images/descriptions)
         context = {
             "request": request,
             "used_dest_imgs_ids": set(),
@@ -174,13 +217,11 @@ class PreviewClientSafariItineraryView(APIView):
             "used_dest_desc_ids": set(),
         }
 
-        # 3. Pass VERSION object (si client) kwa serializer
         serializer = MainItineraryPreviewSerializer(
             version,  
             context=context
         )
 
-        # 4. Hero Image Logic (Inatumia data kutoka kwenye version)
         selected_hero_image = None
         tour_title_lower = (version.client_request.tour_title or "").lower()
 
@@ -195,7 +236,6 @@ class PreviewClientSafariItineraryView(APIView):
             random_hero = random.choice(list(hero_images))
             selected_hero_image = request.build_absolute_uri(random_hero.image.url)
 
-        # 5. Return Response
         return Response(
             {
                 "hero_image": selected_hero_image,
@@ -212,6 +252,16 @@ class PreviewClientSafariItineraryView(APIView):
 
 
 
+
+
+
+
+
+
+#=================== 3.a.=========================
+#----------------PRICING-------------------------
+#=================================================
+
 class PricingBreakdownToStaffView(generics.RetrieveAPIView):
     # authentication_classes = [CustomJwtCookiesAuth]
     # permission_classes = [IsAuthenticated ,IsStaff ]
@@ -223,7 +273,7 @@ class PricingBreakdownToStaffView(generics.RetrieveAPIView):
 
         try:
            snapshot = ItineraryPricingSnapshot.objects.select_related(
-               "version__client_request", "generated_by__user"
+               "version__client_request", "generated_by"
                ).prefetch_related(
                    "breakdown_items"
                ).get(
@@ -235,3 +285,6 @@ class PricingBreakdownToStaffView(generics.RetrieveAPIView):
         except ValueError:
             raise NotFound(detail="Invalid client Request ID format.")
         return snapshot
+
+
+

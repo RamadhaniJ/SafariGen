@@ -182,7 +182,7 @@ def _get_vehicle_daily_rate():
 # MAIN PRICING ENGINE
 # ==========================================
 
-def calculate_and_save_pricing_snapshot(itinerary_version, commission_percentage=0, staff_profile=None):
+def calculate_and_save_pricing_snapshot(itinerary_version, commission_percentage=0, current_user=None):
 
     client_request = itinerary_version.client_request
 
@@ -491,7 +491,7 @@ def calculate_and_save_pricing_snapshot(itinerary_version, commission_percentage
             commission_amount=commission_amount,
             grand_total=grand_total,
             price_per_person=price_per_person,
-            generated_by=staff_profile,
+            generated_by=current_user,
         )
 
         # 3. Create breakdown items in bulk

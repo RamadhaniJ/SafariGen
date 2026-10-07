@@ -1,23 +1,30 @@
 from django.db import models
-from Users.models import StaffProfile
+from Users.models import StaffProfile, CustomUserModel, Company
 from Destinations.models import Destination
 from uuid6 import uuid7
 from django.utils import timezone
 import uuid
   
 # Create your models here.
-
+ 
 class ClientInformation(models.Model):
     id = models.UUIDField(editable=False, primary_key=True, default=uuid7)
 
+    company = models.ForeignKey(
+        Company,
+        on_delete=models.CASCADE,
+        related_name="clients",
+        null=True,
+        blank=True 
+    )  
+
     created_by = models.ForeignKey(
-                                    StaffProfile,
-                                    on_delete=models.SET_NULL,
-                                    related_name="staff_create_client",
-                                    null=True,
-                                    blank=True
-                                ) 
-     
+        CustomUserModel,
+        on_delete=models.SET_NULL,
+        related_name="created_clients",
+        null=True, blank=True
+    )
+
   
     email = models.EmailField(unique=True)
     salutation = models.CharField(max_length=10, choices=[
@@ -26,9 +33,9 @@ class ClientInformation(models.Model):
                                                             ("Mrs","Mrs"),
                                                             ("Prof","Prof"),
                                                             ("Dr","Dr"),
-                                                        ])
+                                                         ])
     
-    first_name = models.CharField(max_length=200)
+    first_name = models.CharField(max_length=200) 
     last_name = models.CharField(max_length=200)
 
     country = models.CharField(max_length=50, blank=True, null=True)
@@ -48,15 +55,18 @@ class ClientInformation(models.Model):
 
 
  
-
+ 
  
 
 
     # 2. --------------------CLIENT REQUEST INFORMATION  -------------------------
+
+
+ 
 class ClientRequestInformation(models.Model):
     id = models.UUIDField(
         editable=False, primary_key=True,
-        default=uuid7
+        default=uuid7 
     ) 
 
     tour_code = models.CharField(
@@ -214,3 +224,8 @@ class RoomSelection(models.Model):
 
 
 
+
+
+
+
+ 

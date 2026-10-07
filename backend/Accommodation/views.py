@@ -5,7 +5,7 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.filters import SearchFilter
 from rest_framework.views import APIView
 
-from Users.views import IsStaff 
+from Users.view_auth import IsStaffOrManager 
 from Users.authentication import CustomJwtCookiesAuth
 from Accommodation.Serializer import AccommodationSerializer
 from Accommodation.models import Accommodation
@@ -17,7 +17,7 @@ from django.db.models import Q, Case,Value, When, IntegerField
 
 class LiveSearchAccommodationView( APIView ):
     authentication_classes = [CustomJwtCookiesAuth]
-    permission_classes = [IsStaff, IsAuthenticated]
+    permission_classes = [IsStaffOrManager, IsAuthenticated]
 
 
     def get(self, request):

@@ -66,12 +66,15 @@ INSTALLED_APPS = [
     'Configuration',
 
     'Communication',
+    
+    'ActivityLog',
 
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'corsheaders.middleware.CorsMiddleware',
+    "optimizer_middleware.middleware.ImageOptimizationMiddleware",
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -211,6 +214,11 @@ DEFAULT_FROM_EMAIL = "IPS Software <jamessmollel6@gmail.com>"
 
 # ⚠️ NIMEONDOA HIYO SPACE MWANZO (" http..." -> "http...")
 FRONTEND_URL = "http://localhost:5173" 
+
+
+IMAGE_OPTIMIZER_WIDTH = 1200  
+IMAGE_OPTIMIZER_HEIGHT = None 
+IMAGE_OPTIMIZER_QUALITY = 85   
 
 
 

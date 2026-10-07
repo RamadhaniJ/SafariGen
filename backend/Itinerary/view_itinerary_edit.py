@@ -5,25 +5,26 @@ from Itinerary.serializer_edit import VersionForEditSerializer, EditItinerarySer
 from rest_framework import generics, status
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.views import APIView
 from django.shortcuts import get_object_or_404
 
 from Itinerary.models import ItineraryVersion
 from Users.authentication import CustomJwtCookiesAuth
-from Users.views import IsStaff
-
+from Users.view_auth import IsStaff, IsStaffOrManager
+ 
 
 class GetVersionForEditView(APIView):
 
     authentication_classes = [CustomJwtCookiesAuth]
-    permission_classes = [IsAuthenticated, IsStaff]
+    permission_classes = [IsAuthenticated, IsStaffOrManager]
 
     def get(self, request, version_id):
         version = get_object_or_404(
             ItineraryVersion.objects.select_related(
-                'client_request__client_requested',
+                'client_request__client_requested__company',
                 'client_request__start_destination',
-                'client_request__end_destination',
+                'client_request__end_destination', 
                 'version_pricing_snapshot'
             ).prefetch_related(
                 'client_request__travellers',
@@ -41,11 +42,14 @@ class GetVersionForEditView(APIView):
             id=version_id
         )
 
-        if version.client_request.client_requested.created_by != request.user.staff_profile:
-            return Response(
-                {"detail": "You do not have permission to edit this itinerary."},
-                status=status.HTTP_403_FORBIDDEN
+        is_owner = version.client_request.client_requested.company.owner == request.user
+        is_member = request.user.companies.filter(id = version.client_request.client_requested.company.id).exists()
+        if not (is_owner or is_member):
+            raise PermissionDenied(
+                {"detail": "You don't have access to create this Itinerary."}
             )
+
+
         
         serializer = VersionForEditSerializer(
             version, 
@@ -66,7 +70,7 @@ class GetVersionForEditView(APIView):
 
 class SaveEditedItineraryView(APIView):
     authentication_classes = [CustomJwtCookiesAuth]
-    permission_classes = [IsAuthenticated, IsStaff]
+    permission_classes = [IsAuthenticated, IsStaffOrManager]
 
     def post(self, request, version_id, client_id): 
         serializer = EditItinerarySerializer(

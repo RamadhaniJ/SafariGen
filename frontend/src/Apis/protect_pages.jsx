@@ -12,11 +12,11 @@ export default function ProtectPages({children, allowedRole}) {
     }
 
     if (!isAuthenticated){
-        return <Navigate to="/login" replace />;
+        return <Navigate to="/" replace />;
     }
 
     if (allowedRole && allowedRole !== userRole){
-        return <Navigate to="/login" replace />
+        return <Navigate to="/" replace />
     }
 
     return children;

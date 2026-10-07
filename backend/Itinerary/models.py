@@ -4,13 +4,12 @@ from Destinations.models import Destination
 from Accommodation.models import Accommodation, AccommodationRoomType
 # from Activities.models import Activity
 from Clients.models import ClientRequestInformation
-from Users.models import StaffProfile
+from Users.models import CustomUserModel
 
 # Create your models here.
   
- 
+  
 class MainDayByDayItinerary(models.Model):
-
     id = models.UUIDField(default=uuid7, primary_key=True, editable=False)
     version = models.ForeignKey(
         "ItineraryVersion", 
@@ -53,6 +52,10 @@ class MainDayByDayItinerary(models.Model):
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+
+    class Meta:
+        ordering = ["day_number"]
 
 
     def __str__(self):
@@ -178,11 +181,11 @@ class ItineraryPricingSnapshot(models.Model):
         decimal_places=2,
         default=0.00
     ) 
+ 
 
-
-
+ 
     generated_by = models.ForeignKey(
-        StaffProfile,
+        CustomUserModel,
         on_delete=models.SET_NULL,
         null=True,
         blank=True
@@ -291,7 +294,7 @@ class ItineraryPricingBreakdownItem(models.Model):
         return f"Day {self.day_number}: {self.item_title} = ${self.line_total}"
 
 
-  
+   
  
 
 
@@ -404,16 +407,16 @@ class ItineraryVersion(models.Model):
     )
 
     # Added new fields 
-
+ 
     change_summary = models.TextField(
-        blank=True,
+        blank=True, 
         null=True,
         help_text="changes made on this version"
     )
-
+   
 
     created_by = models.ForeignKey(
-        StaffProfile, null=True, blank=True, on_delete=models.SET_NULL
+        CustomUserModel, null=True, blank=True, on_delete=models.SET_NULL
     )
 
 
