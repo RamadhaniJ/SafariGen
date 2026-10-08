@@ -9,6 +9,8 @@ import {
   CreditCard,
   ExternalLink,
   Plus,
+  Umbrella,
+  UserCircle,
 } from "lucide-react";
 
 import { AuthenticationContext } from "../Apis/AuthProvider";
@@ -19,7 +21,7 @@ export default function ManagerDashboardPage() {
 
   const {email, fullName , userRole} = useContext(AuthenticationContext);
 
-  const user = {
+  const user = { 
     name: fullName,
     email: email,
     role: `${userRole}`,
@@ -28,8 +30,8 @@ export default function ManagerDashboardPage() {
   const stats = [
     {
       title: "Total Staff Members",
-      value: "12",
-      change: "+2 this month",
+      value: "-",
+      change: "- this month",
       icon: Users,
       chipBg: "bg-[#FCE9DA]",
       chipText: "text-[#B34F12]",
@@ -37,7 +39,7 @@ export default function ManagerDashboardPage() {
     },
     {
       title: "Active Itineraries",
-      value: "18",
+      value: "-",
       change: "4 pending approval",
       icon: Compass,
       chipBg: "bg-[#E3F1E8]",
@@ -46,7 +48,7 @@ export default function ManagerDashboardPage() {
     },
     {
       title: "Draft Itineraries",
-      value: "6",
+      value: "-",
       change: "Renews in 24 days",
       icon: CreditCard,
       chipBg: "bg-[#FDF4DD]",
@@ -55,29 +57,30 @@ export default function ManagerDashboardPage() {
     },
   ];
 
-  const quickActions = [
-    {
-      title: "Add Itineraries",
-      description: "Create and manage your itineraries in one place.",
-      path: "/staff/new",
-      icon: UserPlus,
-      badge: "Management",
-    },
-    {
-      title: "Update Your Profile",
-      description: "Manage your account settings, security, and personal details.",
-      path: "/profile",
-      icon: UserCheck,
-      badge: "Account",
-    },
-    {
-      title: "Explore Packages",
-      description: "View current subscription tiers, upgrades, and promotional offers.",
-      path: "/subscriptions",
-      icon: Sparkles,
-      badge: "Billing",
-    },
-  ];
+ const quickActions = [
+  {
+    title: "Company Profile",
+    description: "Update company details, branding, and core settings.",
+    path: "/dashboard/manager/companies",
+    icon: Umbrella,
+    badge: "Organization",
+  },
+  {
+    title: "Staff Members",
+    description: "Invite, manage, or remove staff accounts and permissions.",
+    path: "/dashboard/manager/staff",
+    icon: Users, 
+    badge: "Team",
+  },
+  {
+    title: "Account Profile",
+    description: "Update personal details, contact info, and login credentials.",
+    path: "/dashboard/manager/profile/manager",
+    icon: UserCircle,
+    badge: "Personal",
+  },
+];
+
 
   return (
     <div className="min-h-screen bg-[#F6F1E7] text-[#0F2A2E] p-5 sm:p-6 lg:p-10 font-sans antialiased">
@@ -102,7 +105,7 @@ export default function ManagerDashboardPage() {
           <div className="relative flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full lg:w-auto">
             {/* Single primary action on the screen */}
             <Link
-              to="/staff/new"
+              to="/dashboard/manager/quote/create/gate/"
               className="inline-flex items-center justify-center gap-2 rounded-lg bg-[#E8772E] text-[#0F2A2E] font-medium text-sm px-4 py-2.5 shadow-sm shadow-[#E8772E]/20 transition-all duration-200 hover:bg-[#D4661F] hover:shadow-md hover:shadow-[#E8772E]/25 active:bg-[#B34F12] active:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#E8772E]"
             >
               <Plus className="w-4 h-4" />

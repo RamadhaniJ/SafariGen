@@ -210,10 +210,11 @@ MAILERS = {
  
 
 
-DEFAULT_FROM_EMAIL = "IPS Software <jamessmollel6@gmail.com>"
+DEFAULT_FROM_EMAIL = "SafariGen  <jamessmollel6@gmail.com>"
 
 # ⚠️ NIMEONDOA HIYO SPACE MWANZO (" http..." -> "http...")
-FRONTEND_URL = "http://localhost:5173" 
+# FRONTEND_URL = "http://localhost:5173" 
+FRONTEND_URL = "https://app.safarigen.io" 
 
 
 IMAGE_OPTIMIZER_WIDTH = 1200  

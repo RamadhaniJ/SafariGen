@@ -117,7 +117,7 @@ function App() {
                    <CompanyDetailsStep3Page /> 
             </AutoRedirectorAuthenticatedUsers>
             } />
-
+ 
           <Route path='/' element={
             <AutoRedirectorAuthenticatedUsers>
                     <LogInPage/>   

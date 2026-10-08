@@ -144,294 +144,382 @@ export default function PersonalDetailStep1Page() {
     }
   };
 
+
   const inputBase =
-    "w-full pl-10 pr-4 py-2.5 rounded-xl bg-white border text-[#0F2A2E] placeholder:text-[#6B6459]/60 text-sm focus:outline-none transition-all";
+    "w-full pl-11 pr-4 py-3 bg-white border text-sm text-[#0F2A2E] placeholder:text-[#6B6459]/50 transition-all duration-200 focus:outline-none focus:ring-2";
   const inputOk =
-    "border-[#E4DCCB] focus:border-[#E8772E] focus:ring-2 focus:ring-[#E8772E]/20";
+    "border-[#E4DCCB] focus:border-[#E8772E] focus:ring-[#E8772E]/20";
   const inputErr =
-    "border-[#8E2A1F] focus:border-[#8E2A1F] focus:ring-2 focus:ring-[#8E2A1F]/20";
+    "border-[#8E2A1F] focus:border-[#8E2A1F] focus:ring-[#8E2A1F]/20";
 
   return (
-    <div className="min-h-screen bg-[#F6F1E7] text-[#0F2A2E] flex font-sans selection:bg-[#E8772E] selection:text-[#0F2A2E]">
-      {/* ---------- LEFT PANEL: Brand & Value Prop ---------- */}
-      <div className="hidden lg:flex lg:w-1/2 relative bg-[#0F2A2E] p-12 flex-col justify-between overflow-hidden">
-        {/* Glow overlays */}
-        <div className="absolute top-0 -left-10 w-96 h-96 bg-[#E8772E]/20 blur-[120px] pointer-events-none" />
-        <div className="absolute bottom-0 right-0 w-96 h-96 bg-[#F2B544]/10 blur-[120px] pointer-events-none" />
+    <div className="min-h-screen bg-[#EFE8DA] text-[#0F2A2E] font-sans selection:bg-[#E8772E] selection:text-[#0F2A2E] relative overflow-hidden">
 
-        {/* Step indicator */}
-        {/* <div className="relative z-10 flex items-center gap-3 text-xs font-semibold uppercase tracking-wider text-[#F2B544]/80">
-          <span className="px-2.5 py-1 rounded-full bg-[#E8772E]/15 border border-[#E8772E]/30 text-[#F2B544]">
-            Step 1 / 3
-          </span>
-          <span>Personal Information</span>
-        </div> */}
+      {/* Ambient brand washes */}
+      <div className="pointer-events-none absolute -top-40 -right-40 w-[520px] h-[520px] bg-[#E8772E]/12 blur-[150px]" />
+      <div className="pointer-events-none absolute -bottom-40 -left-40 w-[520px] h-[520px] bg-[#F2B544]/15 blur-[150px]" />
 
-        {/* Logo */}
-        <div className="relative z-10 mt-6">
-          <Link
-            to="/"
-            className="inline-flex items-center gap-1 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#E8772E] rounded"
-          >
-            <span className="text-3xl font-black tracking-tight text-[#E8772E]">
-              Safari<span className="text-[#F6F1E7]">Gen</span>
-            </span>
-          </Link>
-        </div>
+      <div className="relative z-10 w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 lg:py-16">
 
-        {/* Content */}
-        <div className="relative z-10 max-w-lg my-auto space-y-8">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#E8772E]/10 border border-[#E8772E]/30 text-[#F2B544] text-xs font-semibold tracking-wide uppercase">
-            <Sparkles className="w-3.5 h-3.5" />
-               Step 1 / 3 : Personal Information
-          </div>
+        {/* ══════════════ THE OPEN BOOK ══════════════ */}
+        <div className="relative">
 
-          <h1 className="text-4xl font-extrabold tracking-tight leading-tight text-[#F6F1E7]">
-            Start your journey to{" "}
-            <span className="text-[#F2B544]">automated itinerary</span> workflows.
-          </h1>
+          {/* Stacked page edges peeking out from under the spread */}
+          <div
+            aria-hidden
+            className="hidden lg:block absolute -left-2.5 -right-2.5 top-2.5 -bottom-2.5 bg-[#E6DDCA] border border-[#D8CDB6]"
+          />
+          <div
+            aria-hidden
+            className="hidden lg:block absolute -left-5 -right-5 top-5 -bottom-5 bg-[#DDD2BB] border border-[#CEC1A6]"
+          />
 
-          <div className="space-y-4 text-[#F6F1E7]/80 text-sm">
-            {[
-              "Turn raw booking data into clean schedules in seconds.",
-              "Seamless real-time team and group collaboration.",
-              "Direct client-ready handoffs with custom branding.",
-            ].map((feature, i) => (
-              <div key={i} className="flex items-center gap-3">
-                <CheckCircle2 className="w-5 h-5 text-[#F2B544] shrink-0" />
-                <span>{feature}</span>
-              </div>
-            ))}
-          </div>
-        </div>
+          {/* Book body — two facing pages, equal height */}
+          <div className="relative grid grid-cols-1 lg:grid-cols-5 items-stretch border border-[#D9CFBA] bg-[#FDFBF6] shadow-[0_40px_90px_-45px_rgba(15,42,46,0.6)]">
 
-        {/* Footer */}
-        <div className="relative z-10 text-xs text-[#F6F1E7]/40">
-          © {new Date().getFullYear()} SafariGen Ltd. All rights reserved.
-        </div>
-      </div>
+            {/* ─── LEFT PAGE — Brand & Value Prop ─── */}
+            <aside className="relative lg:col-span-2 min-h-[480px] bg-[#0F2A2E] overflow-hidden">
 
-      {/* ---------- RIGHT PANEL: Sign Up Form ---------- */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center p-6 sm:p-12 relative">
-        <div className="w-full max-w-md space-y-8 relative z-10">
-          {/* Mobile logo */}
-          <div className="lg:hidden text-center">
-            <Link
-              to="/"
-              className="inline-flex items-center gap-1 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#E8772E] rounded"
-            >
-              <span className="text-3xl font-black tracking-tight text-[#E8772E]">
-                Safari<span className="text-[#0F2A2E]">Gen</span>
-              </span>
-            </Link>
-          </div>
+              {/* Full-bleed image */}
+              <img
+                src="/Honey_moons.webp"
+                alt="SafariGen — create your account"
+                className="absolute inset-0 h-full w-full object-cover"
+              />
 
-          {/* Header */}
-          <div className="text-center lg:text-left space-y-2">
-            <h2 className="text-3xl font-bold tracking-tight text-[#0F2A2E]">
-              Create your account
-            </h2>
-            <p className="text-[#6B6459] text-sm">
-              Already have an account?{" "}
-              <Link
-                to="/"
-                className="text-[#B34F12] hover:text-[#E8772E] font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#E8772E] rounded"
-              >
-                Sign in
-              </Link>
-            </p>
-          </div>
+              {/* Legibility overlays */}
+              <div className="absolute inset-0 bg-gradient-to-t from-[#08191C] via-[#0F2A2E]/50 to-[#0F2A2E]/10" />
+              <div className="absolute inset-0 bg-gradient-to-br from-[#0F2A2E]/45 via-transparent to-transparent" />
 
-          {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-5" noValidate>
-            {/* First + Last name */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold uppercase tracking-wider text-[#0F2A2E]/80">
-                  First Name
-                </label>
-                <div className="relative">
-                  <User2Icon className="w-4 h-4 text-[#6B6459] absolute left-3.5 top-1/2 -translate-y-1/2" />
-                  <input
-                    type="text"
-                    value={fName}
-                    onChange={(e) => {
-                      setFName(e.target.value);
-                      clearError("fName");
-                    }}
-                    placeholder="Juma"
-                    className={`${inputBase} ${errors.fName ? inputErr : inputOk}`}
-                  />
-                </div>
-                {errors.fName && (
-                  <p className="text-xs text-[#8E2A1F]">{errors.fName}</p>
-                )}
-              </div>
+              {/* Gutter shadow — inner edge of the left page */}
+              <div
+                aria-hidden
+                className="hidden lg:block absolute inset-y-0 right-0 w-14 bg-gradient-to-l from-black/60 via-black/15 to-transparent z-10"
+              />
 
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold uppercase tracking-wider text-[#0F2A2E]/80">
-                  Last Name
-                </label>
-                <div className="relative">
-                  <User2Icon className="w-4 h-4 text-[#6B6459] absolute left-3.5 top-1/2 -translate-y-1/2" />
-                  <input
-                    type="text"
-                    value={lName}
-                    onChange={(e) => {
-                      setLName(e.target.value);
-                      clearError("lName");
-                    }}
-                    placeholder="Mushi"
-                    className={`${inputBase} ${errors.lName ? inputErr : inputOk}`}
-                  />
-                </div>
-                {errors.lName && (
-                  <p className="text-xs text-[#8E2A1F]">{errors.lName}</p>
-                )}
-              </div>
-            </div>
+              {/* Page content */}
+              <div className="relative z-10 flex h-full flex-col justify-between gap-10 p-6 sm:p-8 lg:p-10">
 
-            {/* Email */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold uppercase tracking-wider text-[#0F2A2E]/80">
-                 Email Address 
-              </label>
-              <div className="relative">
-                <Mail className="w-4 h-4 text-[#6B6459] absolute left-3.5 top-1/2 -translate-y-1/2" />
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => {
-                    setEmail(e.target.value);
-                    clearError("email");
-                  }}
-                  placeholder="juma@gmail.com"
-                  className={`${inputBase} ${errors.email ? inputErr : inputOk}`}
-                />
-              </div>
-              {errors.email && (
-                <p className="text-xs text-[#8E2A1F]">{errors.email}</p>
-              )}
-            </div>
-
-            {/* Password */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold uppercase tracking-wider text-[#0F2A2E]/80">
-                Password
-              </label>
-              <div className="relative">
-                <Lock className="w-4 h-4 text-[#6B6459] absolute left-3.5 top-1/2 -translate-y-1/2" />
-                <input
-                  type={showPassword ? "text" : "password"}
-                  value={password}
-                  onChange={(e) => {
-                    setPassword(e.target.value);
-                    clearError("password");
-                  }}
-                  placeholder="••••••••"
-                  className={`${inputBase} pr-10 ${errors.password ? inputErr : inputOk}`}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword((s) => !s)}
-                  aria-label={showPassword ? "Hide password" : "Show password"}
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#6B6459] hover:text-[#0F2A2E] transition-colors rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#E8772E]"
+                {/* Logo */}
+                <Link
+                  to="/"
+                  className="inline-flex items-center gap-1 w-fit focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#E8772E]"
                 >
-                  {showPassword ? (
-                    <EyeOff className="w-4 h-4" />
-                  ) : (
-                    <Eye className="w-4 h-4" />
-                  )}
-                </button>
-              </div>
-              {errors.password && (
-                <p className="text-xs text-[#8E2A1F]">{errors.password}</p>
-              )}
-            </div>
+                  <span className="text-2xl sm:text-3xl font-black tracking-tight text-[#E8772E]">
+                    Safari<span className="text-[#FDFBF6]">Gen</span>
+                  </span>
+                </Link>
 
-            {/* Confirm Password */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold uppercase tracking-wider text-[#0F2A2E]/80">
-                Confirm Password
-              </label>
-              <div className="relative">
-                <Lock className="w-4 h-4 text-[#6B6459] absolute left-3.5 top-1/2 -translate-y-1/2" />
-                <input
-                  type={showConfirmPassword ? "text" : "password"}
-                  value={confirmPassword}
-                  onChange={(e) => {
-                    setConfirmPassword(e.target.value);
-                    clearError("confirmPassword");
-                  }}
-                  placeholder="••••••••"
-                  className={`${inputBase} pr-10 ${
-                    errors.confirmPassword ? inputErr : inputOk
-                  }`}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowConfirmPassword((s) => !s)}
-                  aria-label={
-                    showConfirmPassword ? "Hide password" : "Show password"
-                  }
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#6B6459] hover:text-[#0F2A2E] transition-colors rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#E8772E]"
+                {/* Headline + value props */}
+                <div className="space-y-6">
+
+                  {/* Step badge */}
+                  <div className="inline-flex w-fit items-center gap-2.5 border border-[#F6F1E7]/20 bg-[#0F2A2E]/60 px-3.5 py-2 backdrop-blur-md">
+                    <Sparkles className="w-3.5 h-3.5 text-[#F2B544]" />
+                    <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#F2B544]">
+                      Step 1 / 3
+                    </span>
+                    <span className="h-3 w-px bg-[#F6F1E7]/25" />
+                    <span className="text-[11px] font-semibold text-[#F6F1E7]/85">
+                      Personal info
+                    </span>
+                  </div>
+
+                  <h2 className="font-serif text-[26px] sm:text-[30px] lg:text-[34px] font-bold leading-[1.12] tracking-tight text-[#FDFBF6]">
+                    Start your journey to{" "}
+                    <span className="italic text-[#F2B544]">
+                      automated itinerary
+                    </span>{" "}
+                    workflows.
+                  </h2>
+
+                  <div className="space-y-3 text-sm text-[#F6F1E7]/80">
+                    {[
+                      "Turn raw booking data into clean schedules in seconds.",
+                      "Seamless real-time team and group collaboration.",
+                      "Direct client-ready handoffs with custom branding.",
+                    ].map((feature, i) => (
+                      <div key={i} className="flex items-start gap-3">
+                        <CheckCircle2 className="w-4.5 h-4.5 mt-0.5 text-[#F2B544] shrink-0" />
+                        <span className="leading-relaxed">{feature}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Copyright footer */}
+                <div className="text-[11px] tracking-wide text-[#F6F1E7]/40">
+                  © {new Date().getFullYear()} SafariGen. All rights reserved.
+                </div>
+              </div>
+            </aside>
+
+            {/* ─── RIGHT PAGE — Sign Up Form ─── */}
+            <section className="relative lg:col-span-3 bg-[#FDFBF6] p-6 sm:p-9 lg:p-12">
+
+              {/* Gutter shadow — inner edge of the right page */}
+              <div
+                aria-hidden
+                className="hidden lg:block absolute inset-y-0 left-0 w-14 bg-gradient-to-r from-[#0F2A2E]/10 via-[#0F2A2E]/[0.03] to-transparent pointer-events-none z-10"
+              />
+
+              {/* Mobile logo */}
+              <div className="lg:hidden mb-6 text-center">
+                <Link
+                  to="/"
+                  className="inline-flex items-center gap-1 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#E8772E]"
                 >
-                  {showConfirmPassword ? (
-                    <EyeOff className="w-4 h-4" />
-                  ) : (
-                    <Eye className="w-4 h-4" />
-                  )}
-                </button>
+                  <span className="text-3xl font-black tracking-tight text-[#E8772E]">
+                    Safari<span className="text-[#0F2A2E]">Gen</span>
+                  </span>
+                </Link>
               </div>
-              {errors.confirmPassword && (
-                <p className="text-xs text-[#8E2A1F]">{errors.confirmPassword}</p>
-              )}
-            </div>
 
-            {/* Submit — Savannah night text on ember (WCAG-safe) */}
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-3 px-4 rounded-xl bg-[#E8772E] text-[#0F2A2E] font-semibold text-sm hover:bg-[#D4661F] shadow-lg shadow-[#E8772E]/30 transition-all active:bg-[#B34F12] active:text-white active:scale-[0.99] disabled:bg-[#E9E3D6] disabled:text-[#A39C8F] disabled:shadow-none disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer mt-2 focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#E8772E]"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Creating Account...
-                </>
-              ) : (
-                <>
-                  Continue
-                  <ArrowRight className="w-4 h-4" />
-                </>
-              )}
-            </button>
-          </form>
+              {/* Card header */}
+              <header className="relative pb-6 mb-7 border-b border-[#E4DCCB]">
+                <div className="flex items-center gap-3 mb-3">
+                  <span className="h-px w-8 bg-[#E8772E]" />
+                  <span className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#B34F12]">
+                    Create account
+                  </span>
+                </div>
 
-          {/* Trust badge */}
-          <div className="flex items-center justify-center gap-2 text-[11px] text-[#6B6459]">
-            <ShieldCheck className="w-3.5 h-3.5 text-[#E8772E]" />
-            Your data is encrypted and never shared.
+                <h1 className="font-serif text-[26px] sm:text-[30px] font-bold tracking-tight text-[#0F2A2E]">
+                  Create your account
+                </h1>
+
+                <p className="text-xs sm:text-sm text-[#6B6459] mt-1.5">
+                  Already have an account?{" "}
+                  <Link
+                    to="/"
+                    className="text-[#B34F12] hover:text-[#E8772E] font-semibold transition-colors border-b border-dashed border-[#B34F12]/40 hover:border-[#E8772E] focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#E8772E]"
+                  >
+                    Sign in
+                  </Link>
+                </p>
+              </header>
+
+              <form onSubmit={handleSubmit} className="space-y-5" noValidate>
+
+                {/* ── First + Last name ── */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-semibold text-[#0F2A2E]/80 uppercase tracking-wider">
+                      First name <span className="text-[#B34F12]">*</span>
+                    </label>
+                    <div className="relative group">
+                      <User2Icon className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#6B6459] transition-colors group-focus-within:text-[#E8772E]" />
+                      <input
+                        type="text"
+                        value={fName}
+                        onChange={(e) => {
+                          setFName(e.target.value);
+                          clearError("fName");
+                        }}
+                        placeholder="Juma"
+                        autoComplete="given-name"
+                        className={`${inputBase} ${errors.fName ? inputErr : inputOk}`}
+                      />
+                    </div>
+                    {errors.fName && (
+                      <p className="text-xs text-[#8E2A1F] mt-1 animate-in slide-in-from-top-1">
+                        {errors.fName}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-semibold text-[#0F2A2E]/80 uppercase tracking-wider">
+                      Last name <span className="text-[#B34F12]">*</span>
+                    </label>
+                    <div className="relative group">
+                      <User2Icon className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#6B6459] transition-colors group-focus-within:text-[#E8772E]" />
+                      <input
+                        type="text"
+                        value={lName}
+                        onChange={(e) => {
+                          setLName(e.target.value);
+                          clearError("lName");
+                        }}
+                        placeholder="Mushi"
+                        autoComplete="family-name"
+                        className={`${inputBase} ${errors.lName ? inputErr : inputOk}`}
+                      />
+                    </div>
+                    {errors.lName && (
+                      <p className="text-xs text-[#8E2A1F] mt-1 animate-in slide-in-from-top-1">
+                        {errors.lName}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {/* ── Email ── */}
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-semibold text-[#0F2A2E]/80 uppercase tracking-wider">
+                    Email address <span className="text-[#B34F12]">*</span>
+                  </label>
+                  <div className="relative group">
+                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#6B6459] transition-colors group-focus-within:text-[#E8772E]" />
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={(e) => {
+                        setEmail(e.target.value);
+                        clearError("email");
+                      }}
+                      placeholder="juma@gmail.com"
+                      autoComplete="email"
+                      className={`${inputBase} ${errors.email ? inputErr : inputOk}`}
+                    />
+                  </div>
+                  {errors.email && (
+                    <p className="text-xs text-[#8E2A1F] mt-1 animate-in slide-in-from-top-1">
+                      {errors.email}
+                    </p>
+                  )}
+                </div>
+
+                {/* ── Password ── */}
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-semibold text-[#0F2A2E]/80 uppercase tracking-wider">
+                    Password <span className="text-[#B34F12]">*</span>
+                  </label>
+                  <div className="relative group">
+                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#6B6459] transition-colors group-focus-within:text-[#E8772E]" />
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      value={password}
+                      onChange={(e) => {
+                        setPassword(e.target.value);
+                        clearError("password");
+                      }}
+                      placeholder="••••••••"
+                      autoComplete="new-password"
+                      className={`${inputBase} pr-11 ${errors.password ? inputErr : inputOk}`}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword((s) => !s)}
+                      aria-label={showPassword ? "Hide password" : "Show password"}
+                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#6B6459] hover:text-[#0F2A2E] transition-colors focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#E8772E]"
+                    >
+                      {showPassword ? (
+                        <EyeOff className="w-4 h-4" />
+                      ) : (
+                        <Eye className="w-4 h-4" />
+                      )}
+                    </button>
+                  </div>
+                  {errors.password && (
+                    <p className="text-xs text-[#8E2A1F] mt-1 animate-in slide-in-from-top-1">
+                      {errors.password}
+                    </p>
+                  )}
+                </div>
+
+                {/* ── Confirm Password ── */}
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-semibold text-[#0F2A2E]/80 uppercase tracking-wider">
+                    Confirm password <span className="text-[#B34F12]">*</span>
+                  </label>
+                  <div className="relative group">
+                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#6B6459] transition-colors group-focus-within:text-[#E8772E]" />
+                    <input
+                      type={showConfirmPassword ? "text" : "password"}
+                      value={confirmPassword}
+                      onChange={(e) => {
+                        setConfirmPassword(e.target.value);
+                        clearError("confirmPassword");
+                      }}
+                      placeholder="••••••••"
+                      autoComplete="new-password"
+                      className={`${inputBase} pr-11 ${
+                        errors.confirmPassword ? inputErr : inputOk
+                      }`}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword((s) => !s)}
+                      aria-label={
+                        showConfirmPassword ? "Hide password" : "Show password"
+                      }
+                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#6B6459] hover:text-[#0F2A2E] transition-colors focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#E8772E]"
+                    >
+                      {showConfirmPassword ? (
+                        <EyeOff className="w-4 h-4" />
+                      ) : (
+                        <Eye className="w-4 h-4" />
+                      )}
+                    </button>
+                  </div>
+                  {errors.confirmPassword && (
+                    <p className="text-xs text-[#8E2A1F] mt-1 animate-in slide-in-from-top-1">
+                      {errors.confirmPassword}
+                    </p>
+                  )}
+                </div>
+
+                {/* ── Submit ── */}
+                <div className="pt-2">
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full relative flex items-center justify-center gap-2.5 bg-[#E8772E] text-[#0F2A2E] font-semibold py-3.5 px-6 text-sm sm:text-base
+                               transition-all duration-300
+                               hover:bg-[#D4661F] hover:shadow-xl hover:shadow-[#E8772E]/30 hover:-translate-y-0.5
+                               active:bg-[#B34F12] active:text-white active:translate-y-0 active:scale-[0.99]
+                               disabled:bg-[#E9E3D6] disabled:text-[#A39C8F] disabled:shadow-none disabled:translate-y-0 disabled:cursor-not-allowed disabled:hover:bg-[#E9E3D6]
+                               shadow-lg shadow-[#E8772E]/25
+                               focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#E8772E]"
+                  >
+                    {loading ? (
+                      <>
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                        Creating account…
+                      </>
+                    ) : (
+                      <>
+                        Continue
+                        <ArrowRight className="w-5 h-5" />
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                {/* ── Trust badge ── */}
+                <div className="flex items-center justify-center gap-2 pt-1 text-[11px] tracking-wide text-[#6B6459]">
+                  <ShieldCheck className="w-3.5 h-3.5 text-[#E8772E]" />
+                  Your data is encrypted and never shared.
+                </div>
+
+                {/* ── Terms ── */}
+                <p className="text-center text-[11px] text-[#6B6459] leading-relaxed">
+                  By signing up, you agree to our{" "}
+                  <a
+                    href="#"
+                    className="underline text-[#B34F12] hover:text-[#E8772E] transition-colors focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#E8772E]"
+                  >
+                    Terms of Service
+                  </a>{" "}
+                  and{" "}
+                  <a
+                    href="#"
+                    className="underline text-[#B34F12] hover:text-[#E8772E] transition-colors focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#E8772E]"
+                  >
+                    Privacy Policy
+                  </a>
+                  .
+                </p>
+              </form>
+            </section>
+
+            {/* ─── The Spine ─── */}
+            <div
+              aria-hidden
+              className="hidden lg:block absolute inset-y-0 left-[40%] w-px bg-[#0F2A2E]/20 z-10 pointer-events-none"
+            />
           </div>
-
-          {/* Terms */}
-          <p className="text-center text-xs text-[#6B6459] leading-relaxed">
-            By signing up, you agree to our{" "}
-            <a
-              href="#"
-              className="underline text-[#B34F12] hover:text-[#E8772E] transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#E8772E] rounded"
-            >
-              Terms of Service
-            </a>{" "}
-            and{" "}
-            <a
-              href="#"
-              className="underline text-[#B34F12] hover:text-[#E8772E] transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#E8772E] rounded"
-            >
-              Privacy Policy
-            </a>
-            .
-          </p>
         </div>
       </div>
     </div>

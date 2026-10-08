@@ -238,376 +238,538 @@ export default function CompanyDetailsStep3Page() {
         }
     };
 
-    // ---------- Reusable input classes ----------
-    const inputBase =
-        "w-full pl-10 pr-4 py-2.5 rounded-xl bg-white border text-[#0F2A2E] placeholder:text-[#6B6459]/60 text-sm focus:outline-none transition-all";
-    const inputOk =
-        "border-[#E4DCCB] focus:border-[#E8772E] focus:ring-2 focus:ring-[#E8772E]/20";
-    const inputErr =
-        "border-[#8E2A1F] focus:border-[#8E2A1F] focus:ring-2 focus:ring-[#8E2A1F]/20";
+  
 
-    const fileInputBase =
-        "w-full pl-3 pr-3 py-2 rounded-xl bg-white border text-[#0F2A2E] text-sm file:mr-4 file:py-1.5 file:px-3 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-[#E8772E] file:text-[#0F2A2E] hover:file:bg-[#D4661F] transition-all cursor-pointer";
+  // ---------- Reusable input classes ----------
+  const inputBase =
+    "w-full pl-11 pr-4 py-3 bg-white border text-sm text-[#0F2A2E] placeholder:text-[#6B6459]/50 transition-all duration-200 focus:outline-none focus:ring-2";
+  const inputOk =
+    "border-[#E4DCCB] focus:border-[#E8772E] focus:ring-[#E8772E]/20";
+  const inputErr =
+    "border-[#8E2A1F] focus:border-[#8E2A1F] focus:ring-[#8E2A1F]/20";
 
-    return (
-        <div className="min-h-screen bg-[#F6F1E7] text-[#0F2A2E] flex font-sans selection:bg-[#E8772E] selection:text-[#0F2A2E]">
-            {/* ================= LEFT PANEL: Brand & Value Prop ================= */}
-            <div className="hidden lg:flex lg:w-1/2 relative bg-[#0F2A2E] p-12 flex-col justify-between overflow-hidden">
-                {/* Soft brand glows */}
-                <div className="absolute top-0 -left-10 w-96 h-96 bg-[#E8772E]/20 blur-[120px] pointer-events-none" />
-                <div className="absolute bottom-0 right-0 w-96 h-96 bg-[#F2B544]/10 blur-[120px] pointer-events-none" />
+  const fileInputBase =
+    "w-full pl-3 pr-3 py-2.5 bg-white border text-sm text-[#0F2A2E] file:mr-4 file:py-1.5 file:px-3 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-[#E8772E] file:text-[#0F2A2E] hover:file:bg-[#D4661F] transition-all duration-200 cursor-pointer focus:outline-none";
 
-                <div className="relative z-10">
-                    <button
-                        onClick={() => navigate(-1)}
-                        className="text-[#F6F1E7]/70 hover:text-[#F6F1E7] mb-4 flex items-center gap-2 text-sm transition-colors rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#E8772E]"
-                    >
-                        ← Back
-                    </button>
-                    <Link
-                        to="/"
-                        className="inline-flex items-center gap-1 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#E8772E] rounded"
-                    >
-                        <span className="text-3xl font-black tracking-tight text-[#E8772E]">
-                            Safari<span className="text-[#F6F1E7]">Gen</span>
-                        </span>
-                    </Link>
+  return (
+    <div className="min-h-screen bg-[#EFE8DA] text-[#0F2A2E] font-sans selection:bg-[#E8772E] selection:text-[#0F2A2E] relative overflow-hidden">
+
+      {/* Ambient brand washes */}
+      <div className="pointer-events-none absolute -top-40 -right-40 w-[520px] h-[520px] bg-[#E8772E]/12 blur-[150px]" />
+      <div className="pointer-events-none absolute -bottom-40 -left-40 w-[520px] h-[520px] bg-[#F2B544]/15 blur-[150px]" />
+
+      <div className="relative z-10 w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 lg:py-16">
+
+        {/* ══════════════ THE OPEN BOOK ══════════════ */}
+        <div className="relative">
+
+          {/* Stacked page edges peeking out from under the spread */}
+          <div
+            aria-hidden
+            className="hidden lg:block absolute -left-2.5 -right-2.5 top-2.5 -bottom-2.5 bg-[#E6DDCA] border border-[#D8CDB6]"
+          />
+          <div
+            aria-hidden
+            className="hidden lg:block absolute -left-5 -right-5 top-5 -bottom-5 bg-[#DDD2BB] border border-[#CEC1A6]"
+          />
+
+          {/* Book body — two facing pages */}
+          <div className="relative grid grid-cols-1 lg:grid-cols-5 items-stretch border border-[#D9CFBA] bg-[#FDFBF6] shadow-[0_40px_90px_-45px_rgba(15,42,46,0.6)]">
+
+            {/* ─── LEFT PAGE — Brand & Step Indicator ─── */}
+            <aside className="relative lg:col-span-2 min-h-[520px] bg-[#0F2A2E] overflow-hidden">
+
+              {/* Full-bleed image */}
+              <img
+                src="/cultural_Image.jpg"
+                alt="SafariGen — set up your company profile"
+                className="absolute inset-0 h-full w-full object-cover"
+              />
+
+              {/* Legibility overlays */}
+              <div className="absolute inset-0 bg-gradient-to-t from-[#08191C] via-[#0F2A2E]/50 to-[#0F2A2E]/10" />
+              <div className="absolute inset-0 bg-gradient-to-br from-[#0F2A2E]/45 via-transparent to-transparent" />
+
+              {/* Gutter shadow — inner edge of the left page */}
+              <div
+                aria-hidden
+                className="hidden lg:block absolute inset-y-0 right-0 w-14 bg-gradient-to-l from-black/60 via-black/15 to-transparent z-10"
+              />
+
+              {/* Page content */}
+              <div className="relative z-10 flex h-full flex-col justify-between gap-10 p-6 sm:p-8 lg:p-10">
+
+                {/* Back + Logo */}
+                <div className="space-y-4">
+                  <button
+                    onClick={() => navigate(-1)}
+                    className="inline-flex items-center gap-1.5 text-[#F6F1E7]/70 hover:text-[#F6F1E7] text-xs font-semibold uppercase tracking-wider transition-colors focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#E8772E]"
+                  >
+                    <ArrowRight className="w-3.5 h-3.5 rotate-180" />
+                    Back
+                  </button>
+
+                  <Link
+                    to="/"
+                    className="inline-flex items-center gap-1 w-fit focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#E8772E]"
+                  >
+                    <span className="text-2xl sm:text-3xl font-black tracking-tight text-[#E8772E]">
+                      Safari<span className="text-[#FDFBF6]">Gen</span>
+                    </span>
+                  </Link>
                 </div>
 
-                <div className="relative z-10 max-w-lg my-auto space-y-8">
-                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#E8772E]/15 border border-[#E8772E]/30 text-[#F2B544] text-xs font-semibold tracking-wide uppercase">
-                        <Sparkles className="w-3.5 h-3.5" />
-                        Step 3 of 3: Company Details
-                    </div> 
-                    <h1 className="text-4xl font-extrabold tracking-tight leading-tight text-[#F6F1E7]">
-                        Let's set up your{" "}
-                        <span className="text-[#F2B544]">company profile</span>.
-                    </h1>
-                    <div className="space-y-4 text-[#F6F1E7]/80 text-sm">
-                        {[
-                            "Verify your business for trust and credibility.",
-                            "Unlock advanced team collaboration features.",
-                            "Start building professional itineraries immediately.",
-                        ].map((feature, i) => (
-                            <div key={i} className="flex items-center gap-3">
-                                <CheckCircle2 className="w-5 h-5 text-[#F2B544] shrink-0" />
-                                <span>{feature}</span>
-                            </div>
-                        ))}
+                {/* Headline + value props */}
+                <div className="space-y-6">
+
+                  {/* Step badge */}
+                  <div className="inline-flex w-fit items-center gap-2.5 border border-[#F6F1E7]/20 bg-[#0F2A2E]/60 px-3.5 py-2 backdrop-blur-md">
+                    <Sparkles className="w-3.5 h-3.5 text-[#F2B544]" />
+                    <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#F2B544]">
+                      Step 3 / 3
+                    </span>
+                    <span className="h-3 w-px bg-[#F6F1E7]/25" />
+                    <span className="text-[11px] font-semibold text-[#F6F1E7]/85">
+                      Company details
+                    </span>
+                  </div>
+
+                  <h2 className="font-serif text-[26px] sm:text-[30px] lg:text-[34px] font-bold leading-[1.12] tracking-tight text-[#FDFBF6]">
+                    Let's set up your{" "}
+                    <span className="italic text-[#F2B544]">
+                      company profile
+                    </span>
+                    .
+                  </h2>
+
+                  <div className="space-y-3 text-sm text-[#F6F1E7]/80">
+                    {[
+                      "Verify your business for trust and credibility.",
+                      "Unlock advanced team collaboration features.",
+                      "Start building professional itineraries immediately.",
+                    ].map((feature, i) => (
+                      <div key={i} className="flex items-start gap-3">
+                        <CheckCircle2 className="w-4.5 h-4.5 mt-0.5 text-[#F2B544] shrink-0" />
+                        <span className="leading-relaxed">{feature}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Copyright footer */}
+                <div className="text-[11px] tracking-wide text-[#F6F1E7]/40">
+                  © {new Date().getFullYear()} SafariGen. All rights reserved.
+                </div>
+              </div>
+            </aside>
+
+            {/* ─── RIGHT PAGE — Company Form ─── */}
+            <section className="relative lg:col-span-3 bg-[#FDFBF6] p-6 sm:p-9 lg:p-12">
+
+              {/* Gutter shadow — inner edge of the right page */}
+              <div
+                aria-hidden
+                className="hidden lg:block absolute inset-y-0 left-0 w-14 bg-gradient-to-r from-[#0F2A2E]/10 via-[#0F2A2E]/[0.03] to-transparent pointer-events-none z-10"
+              />
+
+              {/* Mobile logo */}
+              <div className="lg:hidden mb-6 text-center">
+                <Link
+                  to="/"
+                  className="inline-flex items-center gap-1 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#E8772E]"
+                >
+                  <span className="text-3xl font-black tracking-tight text-[#E8772E]">
+                    Safari<span className="text-[#0F2A2E]">Gen</span>
+                  </span>
+                </Link>
+              </div>
+
+              {/* Card header */}
+              <header className="relative pb-6 mb-7 border-b border-[#E4DCCB]">
+                <div className="flex items-center gap-3 mb-3">
+                  <span className="h-px w-8 bg-[#E8772E]" />
+                  <span className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#B34F12]">
+                    Final step
+                  </span>
+                </div>
+
+                <h1 className="font-serif text-[26px] sm:text-[30px] font-bold tracking-tight text-[#0F2A2E]">
+                  Company details
+                </h1>
+
+                <p className="text-xs sm:text-sm text-[#6B6459] mt-1.5">
+                  Provide your official business information for verification.
+                  Fields marked with{" "}
+                  <span className="text-[#B34F12] font-semibold">*</span> are
+                  required.
+                </p>
+              </header>
+
+              <form onSubmit={handleSubmit} className="space-y-6" noValidate>
+
+                {/* ── Row 1: Name + Email ── */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-semibold text-[#0F2A2E]/80 uppercase tracking-wider">
+                      Company name <span className="text-[#B34F12]">*</span>
+                    </label>
+                    <div className="relative group">
+                      <Building2 className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#6B6459] transition-colors group-focus-within:text-[#E8772E]" />
+                      <input
+                        type="text"
+                        value={name}
+                        onChange={(e) => {
+                          setName(e.target.value);
+                          setErrors((prev) => ({ ...prev, name: null }));
+                        }}
+                        placeholder="e.g. Safari Experts Ltd"
+                        autoComplete="organization"
+                        className={`${inputBase} ${errors.name ? inputErr : inputOk}`}
+                      />
                     </div>
+                    {errors.name && (
+                      <p className="text-xs text-[#8E2A1F] mt-1 animate-in slide-in-from-top-1">
+                        {errors.name}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-semibold text-[#0F2A2E]/80 uppercase tracking-wider">
+                      Company email <span className="text-[#B34F12]">*</span>
+                    </label>
+                    <div className="relative group">
+                      <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#6B6459] transition-colors group-focus-within:text-[#E8772E]" />
+                      <input
+                        type="email"
+                        value={email}
+                        onChange={(e) => {
+                          setEmail(e.target.value);
+                          setErrors((prev) => ({ ...prev, email: null }));
+                        }}
+                        placeholder="safari@experts.io"
+                        autoComplete="email"
+                        className={`${inputBase} ${errors.email ? inputErr : inputOk}`}
+                      />
+                    </div>
+                    {errors.email && (
+                      <p className="text-xs text-[#8E2A1F] mt-1 animate-in slide-in-from-top-1">
+                        {errors.email}
+                      </p>
+                    )}
+                  </div>
                 </div>
 
-                <div className="relative z-10 text-xs text-[#F6F1E7]/40">
-                    © {new Date().getFullYear()} SafariGen Ltd. All rights reserved.
+                {/* ── Row 2: Phone + Logo ── */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-semibold text-[#0F2A2E]/80 uppercase tracking-wider">
+                      Phone number <span className="text-[#B34F12]">*</span>
+                    </label>
+                    <div className="relative group">
+                      <PhoneCall className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#6B6459] transition-colors group-focus-within:text-[#E8772E]" />
+                      <input
+                        type="tel"
+                        value={phone_number}
+                        onChange={(e) => {
+                          setPhoneNumber(e.target.value);
+                          setErrors((prev) => ({ ...prev, phone_number: null }));
+                        }}
+                        placeholder="+255 656 992 991"
+                        autoComplete="tel"
+                        className={`${inputBase} ${errors.phone_number ? inputErr : inputOk}`}
+                      />
+                    </div>
+                    {errors.phone_number && (
+                      <p className="text-xs text-[#8E2A1F] mt-1 animate-in slide-in-from-top-1">
+                        {errors.phone_number}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-semibold text-[#0F2A2E]/80 uppercase tracking-wider">
+                      Company logo <span className="text-[#B34F12]">*</span>
+                    </label>
+                    <input
+                      type="file"
+                      accept=".jpg,.jpeg,.png,.webp"
+                      onChange={(e) =>
+                        handleFileChange(
+                          e,
+                          setLogo,
+                          setLogoPreview,
+                          "logo",
+                          ["jpg", "jpeg", "png", "webp"]
+                        )
+                      }
+                      className={`${fileInputBase} ${
+                        errors.logo ? "border-[#8E2A1F]" : "border-[#E4DCCB]"
+                      }`}
+                    />
+                    {errors.logo && (
+                      <p className="text-xs text-[#8E2A1F] mt-1 animate-in slide-in-from-top-1">
+                        {errors.logo}
+                      </p>
+                    )}
+                    {logoPreview && (
+                      <div className="mt-2 flex items-center gap-3 bg-white p-2 border border-[#E4DCCB]">
+                        <img
+                          src={logoPreview}
+                          alt="Logo preview"
+                          className="h-11 w-11 object-cover border border-[#E4DCCB]"
+                        />
+                        <div className="flex items-center gap-1.5 text-xs text-[#6B6459] min-w-0">
+                          <ImageIcon className="w-3.5 h-3.5 text-[#B34F12] shrink-0" />
+                          <span className="truncate">{logo?.name}</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
-            </div>
 
-            {/* ================= RIGHT PANEL: Form ================= */}
-            <div className="w-full lg:w-1/2 flex items-start lg:items-center justify-center p-6 sm:p-12 relative overflow-y-auto">
-                {/* Mobile soft glow */}
-                <div className="lg:hidden absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-sm h-64 bg-[#FCE9DA] blur-[90px] pointer-events-none" />
+                {/* ── Row 3: Website + Country ── */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-semibold text-[#0F2A2E]/80 uppercase tracking-wider">
+                      Website <span className="text-[#B34F12]">*</span>
+                    </label>
+                    <div className="relative group">
+                      <Globe className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#6B6459] transition-colors group-focus-within:text-[#E8772E]" />
+                      <input
+                        type="url"
+                        value={website}
+                        onChange={(e) => {
+                          setWebsite(e.target.value);
+                          setErrors((prev) => ({ ...prev, website: null }));
+                        }}
+                        placeholder="https://www.example.com"
+                        autoComplete="url"
+                        className={`${inputBase} ${errors.website ? inputErr : inputOk}`}
+                      />
+                    </div>
+                    {errors.website && (
+                      <p className="text-xs text-[#8E2A1F] mt-1 animate-in slide-in-from-top-1">
+                        {errors.website}
+                      </p>
+                    )}
+                  </div>
 
-                <div className="w-full max-w-2xl space-y-8 relative z-10 py-4 lg:py-0">
-                    {/* Mobile logo */}
-                    <div className="lg:hidden text-center">
-                        <Link
-                            to="/"
-                            className="inline-flex items-center gap-1 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#E8772E] rounded"
-                        >
-                            <span className="text-3xl font-black tracking-tight text-[#E8772E]">
-                                Safari<span className="text-[#0F2A2E]">Gen</span>
-                            </span>
-                        </Link>
+                  <div className="space-y-1.5 relative" ref={countryRef}>
+                    <label className="block text-xs font-semibold text-[#0F2A2E]/80 uppercase tracking-wider">
+                      Operating country <span className="text-[#B34F12]">*</span>
+                    </label>
+                    <div className="relative group">
+                      <Globe className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#6B6459] transition-colors group-focus-within:text-[#E8772E]" />
+                      <input
+                        type="text"
+                        value={country}
+                        onChange={(e) => {
+                          setCountry(e.target.value);
+                          setIsCountryOpen(true);
+                          setErrors((prev) => ({ ...prev, country: null }));
+                        }}
+                        onFocus={() => setIsCountryOpen(true)}
+                        placeholder="e.g. Tanzania"
+                        autoComplete="off"
+                        className={`${inputBase} pr-11 ${errors.country ? inputErr : inputOk}`}
+                      />
+                      <ChevronDown
+                        className={`absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#6B6459] transition-transform duration-200 ${
+                          isCountryOpen ? "rotate-180" : ""
+                        }`}
+                      />
                     </div>
 
-                    {/* Header */}
-                    <div className="text-center lg:text-left space-y-2">
-                        <h2 className="text-3xl font-bold tracking-tight text-[#0F2A2E]">
-                            Company Details
-                        </h2>
-                        <p className="text-[#6B6459] text-sm">
-                            Provide your official business information for verification.
-                        </p>
-                    </div>
-
-                    <form onSubmit={handleSubmit} className="space-y-6" noValidate>
-
-                        {/* Row 1: Name & Logo */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="space-y-1.5">
-                                <label className="text-xs font-semibold uppercase tracking-wider text-[#0F2A2E]/80">
-                                    Company Name *
-                                </label>
-                                <div className="relative">
-                                    <Building2 className="w-4 h-4 text-[#6B6459] absolute left-3.5 top-1/2 -translate-y-1/2" />
-                                    <input
-                                        type="text"
-                                        value={name}
-                                        onChange={(e) => {
-                                            setName(e.target.value);
-                                            setErrors(prev => ({ ...prev, name: null }));
-                                        }}
-                                        className={`${inputBase} ${errors.name ? inputErr : inputOk}`}
-                                        placeholder="e.g. Safari Experts Ltd"
-                                    />
-                                </div>
-                                {errors.name && <p className="text-xs text-[#8E2A1F]">{errors.name}</p>}
-                            </div>
-
-                            <div className="space-y-1.5">
-                                <label className="text-xs font-semibold uppercase tracking-wider text-[#0F2A2E]/80">
-                                    Company Email *
-                                </label>
-                               <div className="relative">
-                                    <Mail className="w-4 h-4 text-[#6B6459] absolute left-3.5 top-1/2 -translate-y-1/2" />
-                                    <input
-                                        type="email"
-                                        value={email}
-                                        onChange={(e) => {
-                                            setEmail(e.target.value);
-                                            setErrors(prev => ({ ...prev, email: null }));
-                                        }}
-                                        className={`${inputBase} ${errors.email ? inputErr : inputOk}`}
-                                        placeholder="safari@experts.io"
-                                    />
-                                </div>
-                                {errors.email && <p className="text-xs text-[#8E2A1F]">{errors.email}</p>}
-                            </div>
-                        </div>
-
-                    {/* Row 2: Phone Number & Logo */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="space-y-1.5">
-                                <label className="text-xs font-semibold uppercase tracking-wider text-[#0F2A2E]/80">
-                                    Phone Number *
-                                </label>
-                                <div className="relative">
-                                    <PhoneCall className="w-4 h-4 text-[#6B6459] absolute left-3.5 top-1/2 -translate-y-1/2" />
-                                    <input
-                                        type="tel"
-                                        value={phone_number}
-                                        onChange={(e) => {
-                                            setPhoneNumber(e.target.value);
-                                            setErrors(prev => ({ ...prev, phone_number: null }));
-                                        }}
-                                        className={`${inputBase} ${errors.phone_number ? inputErr : inputOk}`}
-                                        placeholder="+255 656 992 991"
-                                    />
-                                </div>
-                                {errors.phone_number && <p className="text-xs text-[#8E2A1F]">{errors.phone_number}</p>}
-                            </div>
-
-                            <div className="space-y-1.5">
-                                <label className="text-xs font-semibold uppercase tracking-wider text-[#0F2A2E]/80">
-                                    Company Logo *
-                                </label>
-                                <div className="relative">
-                                    <input
-                                        type="file"
-                                        accept=".jpg,.jpeg,.png,.webp"
-                                        onChange={(e) => handleFileChange(e, setLogo, setLogoPreview, "logo", ["jpg", "jpeg", "png", "webp"])}
-                                        className={`${fileInputBase} ${errors.logo ? "border-[#8E2A1F]" : "border-[#E4DCCB]"}`}
-                                    />
-                                </div>
-                                {errors.logo && <p className="text-xs text-[#8E2A1F]">{errors.logo}</p>}
-                                {logoPreview && (
-                                    <div className="mt-2 flex items-center gap-3 bg-white p-2 rounded-lg border border-[#E4DCCB]">
-                                        <img
-                                            src={logoPreview}
-                                            alt="Logo Preview"
-                                            className="h-12 w-12 object-cover rounded-lg border border-[#E4DCCB]"
-                                        />
-                                        <div className="flex items-center gap-2 text-xs text-[#6B6459]">
-                                            <ImageIcon className="w-3.5 h-3.5 text-[#B34F12]" />
-                                            <span className="truncate">{logo?.name}</span>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-
-
-
-
-
-
-
-                        {/* Row 2: Website & Country */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="space-y-1.5">
-                                <label className="text-xs font-semibold uppercase tracking-wider text-[#0F2A2E]/80">
-                                    Website *
-                                </label>
-                                <div className="relative">
-                                    <Globe className="w-4 h-4 text-[#6B6459] absolute left-3.5 top-1/2 -translate-y-1/2" />
-                                    <input
-                                        type="url"
-                                        value={website}
-                                        onChange={(e) => {
-                                            setWebsite(e.target.value);
-                                            setErrors(prev => ({ ...prev, website: null }));
-                                        }}
-                                        className={`${inputBase} ${errors.website ? inputErr : inputOk}`}
-                                        placeholder="https://www.example.com"
-                                    />
-                                </div>
-                                {errors.website && <p className="text-xs text-[#8E2A1F]">{errors.website}</p>}
-                            </div>
-
-                            <div className="space-y-1.5 relative" ref={countryRef}>
-                                <label className="text-xs font-semibold uppercase tracking-wider text-[#0F2A2E]/80">
-                                    Operating Country *
-                                </label>
-                                <div className="relative">
-                                    <Globe className="w-4 h-4 text-[#6B6459] absolute left-3.5 top-1/2 -translate-y-1/2" />
-                                    <input
-                                        type="text"
-                                        value={country}
-                                        onChange={(e) => {
-                                            setCountry(e.target.value);
-                                            setIsCountryOpen(true);
-                                            setErrors(prev => ({ ...prev, country: null }));
-                                        }}
-                                        onFocus={() => setIsCountryOpen(true)}
-                                        className={`${inputBase} pr-10 ${errors.country ? inputErr : inputOk}`}
-                                        placeholder="e.g. Tanzania"
-                                        autoComplete="off"
-                                    />
-                                    <ChevronDown
-                                        className={`absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#6B6459] transition-transform ${
-                                            isCountryOpen ? 'rotate-180' : ''
-                                        }`}
-                                    />
-                                </div>
-
-                                {isCountryOpen && country && (
-                                    <ul className="absolute z-20 w-64 mt-1.5 bg-white border border-[#E4DCCB] rounded-xl max-h-48 overflow-y-auto shadow-lg shadow-[#0F2A2E]/5">
-                                        {filteredCountries.length > 0 ? (
-                                            filteredCountries.map((c) => (
-                                                <li
-                                                    key={c}
-                                                    onClick={() => handleSelectCountry(c)}
-                                                    className="px-4 py-2 text-sm text-[#0F2A2E] hover:bg-[#FCE9DA] hover:text-[#B34F12] cursor-pointer transition-colors flex items-center justify-between"
-                                                >
-                                                    {c}
-                                                    {c === country && (
-                                                        <CheckCircle2 className="w-4 h-4 text-[#E8772E]" />
-                                                    )}
-                                                </li>
-                                            ))
-                                        ) : (
-                                            <li className="px-4 py-2 text-sm text-[#6B6459] italic">
-                                                No country found
-                                            </li>
-                                        )}
-                                    </ul>
-                                )}
-                                {errors.country && <p className="text-xs text-[#8E2A1F]">{errors.country}</p>}
-                            </div>
-                        </div>
-
-                        {/* Row 3: Tax Number & Cert of Incorporation */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="space-y-1.5">
-                                <label className="text-xs font-semibold uppercase tracking-wider text-[#0F2A2E]/80">
-                                    Tax ID Number *
-                                </label>
-                                <div className="relative">
-                                    <Hash className="w-4 h-4 text-[#6B6459] absolute left-3.5 top-1/2 -translate-y-1/2" />
-                                    <input
-                                        type="text"
-                                        value={taxNumber}
-                                        onChange={(e) => {
-                                            setTaxNumber(e.target.value);
-                                            setErrors(prev => ({ ...prev, taxNumber: null }));
-                                        }}
-                                        className={`${inputBase} ${errors.taxNumber ? inputErr : inputOk}`}
-                                        placeholder="e.g. 123-456-789"
-                                    />
-                                </div>
-                                {errors.taxNumber && <p className="text-xs text-[#8E2A1F]">{errors.taxNumber}</p>}
-                            </div>
-
-                            <div className="space-y-1.5">
-                                <label className="text-xs font-semibold uppercase tracking-wider text-[#0F2A2E]/80">
-                                    Certificate of Incorporation *
-                                </label>
-                                <div className="relative">
-                                    <input
-                                        type="file"
-                                        accept=".pdf,.jpg,.jpeg,.png"
-                                        onChange={(e) => handleFileChange(e, setCertIncorporation, setCertPreview, "certIncorporation", ["pdf", "jpg", "jpeg", "png"])}
-                                        className={`${fileInputBase} ${errors.certIncorporation ? "border-[#8E2A1F]" : "border-[#E4DCCB]"}`}
-                                    />
-                                </div>
-                                {errors.certIncorporation && (
-                                    <p className="text-xs text-[#8E2A1F]">{errors.certIncorporation}</p>
-                                )}
-                                {certPreview && (
-                                    <div className="mt-2 flex items-center gap-2 text-xs text-[#6B6459] bg-white p-2 rounded-lg border border-[#E4DCCB]">
-                                        <FileText className="w-4 h-4 text-[#B34F12] shrink-0" />
-                                        <span className="truncate">{certIncorporation.name}</span>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-
-                        {/* Row 4: Tax Certificate */}
-                        <div className="space-y-1.5">
-                            <label className="text-xs font-semibold uppercase tracking-wider text-[#0F2A2E]/80">
-                                Tax ID Certificate *
-                            </label>
-                            <div className="relative">
-                                <input
-                                    type="file"
-                                    accept=".pdf,.jpg,.jpeg,.png"
-                                    onChange={(e) => handleFileChange(e, setTaxCertificate, setTaxPreview, "taxCertificate", ["pdf", "jpg", "jpeg", "png"])}
-                                    className={`${fileInputBase} ${errors.taxCertificate ? "border-[#8E2A1F]" : "border-[#E4DCCB]"}`}
-                                />
-                            </div>
-                            {errors.taxCertificate && (
-                                <p className="text-xs text-[#8E2A1F]">{errors.taxCertificate}</p>
-                            )}
-                            {taxPreview && (
-                                <div className="mt-2 flex items-center gap-2 text-xs text-[#6B6459] bg-white p-2 rounded-lg border border-[#E4DCCB]">
-                                    <FileText className="w-4 h-4 text-[#B34F12] shrink-0" />
-                                    <span className="truncate">{taxCertificate.name}</span>
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Submit Button — one primary action per screen */}
-                        <button
-                            type="submit"
-                            disabled={loading}
-                            className="w-full py-3.5 px-4 rounded-xl bg-[#E8772E] text-[#0F2A2E] font-semibold text-sm
-                                       hover:bg-[#D4661F] shadow-lg shadow-[#E8772E]/25 transition-all
-                                       active:bg-[#B34F12] active:text-white active:scale-[0.99]
-                                       disabled:bg-[#E9E3D6] disabled:text-[#A39C8F] disabled:shadow-none disabled:cursor-not-allowed
-                                       flex items-center justify-center gap-2 mt-4 cursor-pointer
-                                       focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#E8772E]"
-                        >
-                            {loading ? (
-                                <>
-                                    <Loader2 className="w-4 h-4 animate-spin" />
-                                    Processing...
-                                </>
-                            ) : (
-                                <>
-                                    Submit &amp; Finish
-                                    <ArrowRight className="w-4 h-4" />
-                                </>
-                            )}
-                        </button>
-
-                        {/* Trust footer */}
-                        <div className="flex items-center justify-center gap-2 text-[11px] text-[#6B6459] pt-2">
-                            <CheckCircle2 className="w-3.5 h-3.5 text-[#E8772E]" />
-                            Your business information is encrypted and reviewed securely.
-                        </div>
-                    </form>
+                    {isCountryOpen && country && (
+                      <ul className="absolute z-30 w-full mt-1.5 bg-white border border-[#E4DCCB] max-h-60 overflow-y-auto shadow-[0_12px_32px_-8px_rgba(15,42,46,0.18)] custom-scrollbar">
+                        {filteredCountries.length > 0 ? (
+                          filteredCountries.map((c) => (
+                            <li
+                              key={c}
+                              onClick={() => handleSelectCountry(c)}
+                              className="px-4 py-2.5 text-sm text-[#0F2A2E] hover:bg-[#FCE9DA] hover:text-[#B34F12] cursor-pointer transition-colors duration-150 flex items-center gap-2"
+                            >
+                              {c}
+                              {c === country && (
+                                <CheckCircle2 className="w-4 h-4 text-[#E8772E] ml-auto" />
+                              )}
+                            </li>
+                          ))
+                        ) : (
+                          <li className="px-4 py-2.5 text-sm text-[#6B6459] italic">
+                            No country found
+                          </li>
+                        )}
+                      </ul>
+                    )}
+                    {errors.country && (
+                      <p className="text-xs text-[#8E2A1F] mt-1 animate-in slide-in-from-top-1">
+                        {errors.country}
+                      </p>
+                    )}
+                  </div>
                 </div>
-            </div>
+
+                {/* ── Row 4: Tax ID + Cert of Incorporation ── */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-semibold text-[#0F2A2E]/80 uppercase tracking-wider">
+                      Tax ID number <span className="text-[#B34F12]">*</span>
+                    </label>
+                    <div className="relative group">
+                      <Hash className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#6B6459] transition-colors group-focus-within:text-[#E8772E]" />
+                      <input
+                        type="text"
+                        value={taxNumber}
+                        onChange={(e) => {
+                          setTaxNumber(e.target.value);
+                          setErrors((prev) => ({ ...prev, taxNumber: null }));
+                        }}
+                        placeholder="e.g. 123-456-789"
+                        className={`${inputBase} ${errors.taxNumber ? inputErr : inputOk}`}
+                      />
+                    </div>
+                    {errors.taxNumber && (
+                      <p className="text-xs text-[#8E2A1F] mt-1 animate-in slide-in-from-top-1">
+                        {errors.taxNumber}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-semibold text-[#0F2A2E]/80 uppercase tracking-wider">
+                      Certificate of incorporation{" "}
+                      <span className="text-[#B34F12]">*</span>
+                    </label>
+                    <input
+                      type="file"
+                      accept=".pdf,.jpg,.jpeg,.png"
+                      onChange={(e) =>
+                        handleFileChange(
+                          e,
+                          setCertIncorporation,
+                          setCertPreview,
+                          "certIncorporation",
+                          ["pdf", "jpg", "jpeg", "png"]
+                        )
+                      }
+                      className={`${fileInputBase} ${
+                        errors.certIncorporation
+                          ? "border-[#8E2A1F]"
+                          : "border-[#E4DCCB]"
+                      }`}
+                    />
+                    {errors.certIncorporation && (
+                      <p className="text-xs text-[#8E2A1F] mt-1 animate-in slide-in-from-top-1">
+                        {errors.certIncorporation}
+                      </p>
+                    )}
+                    {certPreview && (
+                      <div className="mt-2 flex items-center gap-1.5 text-xs text-[#6B6459] bg-white p-2 border border-[#E4DCCB]">
+                        <FileText className="w-4 h-4 text-[#B34F12] shrink-0" />
+                        <span className="truncate">{certIncorporation.name}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* ── Row 5: Tax ID Certificate (full width) ── */}
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-semibold text-[#0F2A2E]/80 uppercase tracking-wider">
+                    Tax ID certificate <span className="text-[#B34F12]">*</span>
+                  </label>
+                  <input
+                    type="file"
+                    accept=".pdf,.jpg,.jpeg,.png"
+                    onChange={(e) =>
+                      handleFileChange(
+                        e,
+                        setTaxCertificate,
+                        setTaxPreview,
+                        "taxCertificate",
+                        ["pdf", "jpg", "jpeg", "png"]
+                      )
+                    }
+                    className={`${fileInputBase} ${
+                      errors.taxCertificate
+                        ? "border-[#8E2A1F]"
+                        : "border-[#E4DCCB]"
+                    }`}
+                  />
+                  {errors.taxCertificate && (
+                    <p className="text-xs text-[#8E2A1F] mt-1 animate-in slide-in-from-top-1">
+                      {errors.taxCertificate}
+                    </p>
+                  )}
+                  {taxPreview && (
+                    <div className="mt-2 flex items-center gap-1.5 text-xs text-[#6B6459] bg-white p-2 border border-[#E4DCCB]">
+                      <FileText className="w-4 h-4 text-[#B34F12] shrink-0" />
+                      <span className="truncate">{taxCertificate.name}</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* ── Submit ── */}
+                <div className="pt-2">
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full relative flex items-center justify-center gap-2.5 bg-[#E8772E] text-[#0F2A2E] font-semibold py-3.5 px-6 text-sm sm:text-base
+                               transition-all duration-300
+                               hover:bg-[#D4661F] hover:shadow-xl hover:shadow-[#E8772E]/30 hover:-translate-y-0.5
+                               active:bg-[#B34F12] active:text-white active:translate-y-0 active:scale-[0.99]
+                               disabled:bg-[#E9E3D6] disabled:text-[#A39C8F] disabled:shadow-none disabled:translate-y-0 disabled:cursor-not-allowed disabled:hover:bg-[#E9E3D6]
+                               shadow-lg shadow-[#E8772E]/25
+                               focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#E8772E]"
+                  >
+                    {loading ? (
+                      <>
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                        Processing…
+                      </>
+                    ) : (
+                      <>
+                        Submit &amp; finish
+                        <ArrowRight className="w-5 h-5" />
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                {/* ── Trust badge ── */}
+                <div className="flex items-center justify-center gap-2 pt-1 text-[11px] tracking-wide text-[#6B6459]">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-[#E8772E]" />
+                  Your business information is encrypted and reviewed securely.
+                </div>
+              </form>
+            </section>
+
+            {/* ─── The Spine ─── */}
+            <div
+              aria-hidden
+              className="hidden lg:block absolute inset-y-0 left-[40%] w-px bg-[#0F2A2E]/20 z-10 pointer-events-none"
+            />
+          </div>
         </div>
-    );
+      </div>
+
+      {/* ─── Global custom scrollbar for country dropdown ─── */}
+      <style jsx>{`
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: #e4dccb;
+          border-radius: 999px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: #d4c9b0;
+        }
+      `}</style>
+    </div>
+  );
 }

@@ -9,7 +9,7 @@ import {
   UserCheck2, 
   MessageCircle,
   Menu,  
-  X, 
+  X,  
   ChevronLeft,
   ChevronRight,
   Umbrella,

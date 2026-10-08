@@ -6,7 +6,8 @@ from playwright.sync_api import sync_playwright, TimeoutError as PlaywrightTimeo
 from Itinerary.models import ItineraryPricingSnapshot
 
 # 1. Ensure base URL doesn't have a trailing slash to avoid double slashes
-REACT_PRINT_URL = os.getenv("REACT_PRINT_URL", "http://localhost:5173").rstrip('/')
+# REACT_PRINT_URL = os.getenv("REACT_PRINT_URL", "http://localhost:5173").rstrip('/')
+REACT_PRINT_URL = os.getenv("REACT_PRINT_URL", "https://app.safarigen.io").rstrip('/')
 FRONTEND_HOST = urlparse(REACT_PRINT_URL).hostname
 PDF_TIMEOUT_MS = 60000
 PDF_READY_TIMEOUT_MS = 45000

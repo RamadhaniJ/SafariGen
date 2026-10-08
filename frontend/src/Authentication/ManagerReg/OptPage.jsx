@@ -188,203 +188,281 @@ export default function VerifyEmailByOTPpage({ email: emailProp }) {
     }
   };
 
+  
+
   const codeComplete = digits.every((d) => d !== "");
 
   return (
-    <div className="min-h-screen bg-[#F6F1E7] text-[#0F2A2E] flex font-sans selection:bg-[#E8772E] selection:text-[#0F2A2E]">
-      {/* ================= LEFT PANEL ================= */}
-      <div className="hidden lg:flex lg:w-1/2 relative bg-[#0F2A2E] p-12 flex-col justify-between overflow-hidden">
-        <div className="absolute top-0 -left-10 w-96 h-96 bg-[#E8772E]/20 blur-[120px] pointer-events-none" />
-        <div className="absolute bottom-0 right-0 w-96 h-96 bg-[#F2B544]/10 blur-[120px] pointer-events-none" />
+    <div className="min-h-screen bg-[#EFE8DA] text-[#0F2A2E] font-sans selection:bg-[#E8772E] selection:text-[#0F2A2E] relative overflow-hidden">
 
-        {/* Step indicator */}
-        <div className="relative z-10 flex items-center gap-3 text-xs font-semibold uppercase tracking-wider text-[#F2B544]/80">
-          <span className="px-2.5 py-1 rounded-full bg-[#E8772E]/15 border border-[#E8772E]/30 text-[#F2B544]">
-            Step 2 / 3
-          </span>
-          <span>Verify Email Address</span>
-        </div>
+      {/* Ambient brand washes */}
+      <div className="pointer-events-none absolute -top-40 -right-40 w-[520px] h-[520px] bg-[#E8772E]/12 blur-[150px]" />
+      <div className="pointer-events-none absolute -bottom-40 -left-40 w-[520px] h-[520px] bg-[#F2B544]/15 blur-[150px]" />
 
-        {/* Logo */}
-        <div className="relative z-10 mt-6">
-          <Link
-            to="/"
-            className="inline-flex items-center gap-1 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#E8772E] rounded"
-          >
-            <span className="text-3xl font-black tracking-tight text-[#E8772E]">
-              Safari<span className="text-[#F6F1E7]">Gen</span>
-            </span>
-          </Link>
-        </div>
+      <div className="relative z-10 w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 lg:py-16">
 
-        {/* Content */}
-        <div className="relative z-10 max-w-lg my-auto space-y-8">
-                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#E8772E]/15 border border-[#E8772E]/30 text-[#F2B544] text-xs font-semibold tracking-wide uppercase">
-                        <Sparkles className="w-3.5 h-3.5" />
-                        Step 2 of 3: Email Address Verification
-                    </div>
+        {/* ══════════════ THE OPEN BOOK ══════════════ */}
+        <div className="relative">
 
-          <h1 className="text-4xl font-extrabold tracking-tight leading-tight text-[#F6F1E7]">
-            Verify your email to{" "}
-            <span className="text-[#F2B544]">activate</span> your account.
-          </h1>
+          {/* Stacked page edges peeking out from under the spread */}
+          <div
+            aria-hidden
+            className="hidden lg:block absolute -left-2.5 -right-2.5 top-2.5 -bottom-2.5 bg-[#E6DDCA] border border-[#D8CDB6]"
+          />
+          <div
+            aria-hidden
+            className="hidden lg:block absolute -left-5 -right-5 top-5 -bottom-5 bg-[#DDD2BB] border border-[#CEC1A6]"
+          />
 
-          <div className="space-y-4 text-[#F6F1E7]/80 text-sm">
-            {[
-              "Turn raw booking data into clean schedules in seconds.",
-              "Seamless real-time team and group collaboration.",
-              "Direct client-ready handoffs with custom branding.",
-            ].map((feature, i) => (
-              <div key={i} className="flex items-center gap-3">
-                <CheckCircle2 className="w-5 h-5 text-[#F2B544] shrink-0" />
-                <span>{feature}</span>
-              </div>
-            ))}
-          </div>
-        </div>
+          {/* Book body — two facing pages, equal height */}
+          <div className="relative grid grid-cols-1 lg:grid-cols-5 items-stretch border border-[#D9CFBA] bg-[#FDFBF6] shadow-[0_40px_90px_-45px_rgba(15,42,46,0.6)]">
 
-        <div className="relative z-10 text-xs text-[#F6F1E7]/40">
-          © {new Date().getFullYear()} SafariGen Ltd. All rights reserved.
-        </div>
-      </div>
+            {/* ─── LEFT PAGE — Brand & Step Indicator ─── */}
+            <aside className="relative lg:col-span-2 min-h-[480px] bg-[#0F2A2E] overflow-hidden">
 
-      {/* ================= RIGHT PANEL ================= */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center p-6 sm:p-12">
-        <div className="w-full max-w-md space-y-8">
-          {/* Mobile logo */}
-          <div className="lg:hidden text-center">
-            <Link
-              to="/"
-              className="inline-flex items-center gap-1 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#E8772E] rounded"
-            >
-              <span className="text-3xl font-black tracking-tight text-[#E8772E]">
-                Safari<span className="text-[#0F2A2E]">Gen</span>
-              </span>
-            </Link>
-          </div>
-
-          {/* Header */}
-          <div className="text-center space-y-3">
-            <div className="w-14 h-14 mx-auto rounded-2xl bg-[#FCE9DA] border border-[#E4DCCB] flex items-center justify-center">
-              <Mail className="w-7 h-7 text-[#B34F12]" />
-            </div>
-
-            <h2 className="text-3xl font-bold tracking-tight text-[#0F2A2E]">
-              Check your inbox
-            </h2>
-
-            <p className="text-[#6B6459] text-sm leading-relaxed">
-              We sent a 6-digit code to{" "}
-              <span className="font-semibold text-[#0F2A2E] break-all">
-                {email || "your email"}
-              </span>
-              . The code expires in{" "}
-              <strong className="text-[#0F2A2E]">5 minutes</strong>.
-            </p>
-          </div>
-
-          {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* OTP inputs */}
-            <div
-              className="flex items-center justify-center gap-2 sm:gap-3"
-              onPaste={handlePaste}
-            >
-              {digits.map((digit, i) => (
-                <input
-                  key={i}
-                  ref={(el) => (inputRefs.current[i] = el)}
-                  type="text"
-                  inputMode="numeric"
-                  autoComplete="one-time-code"
-                  maxLength={1}
-                  value={digit}
-                  onChange={(e) => handleChange(i, e.target.value)}
-                  onKeyDown={(e) => handleKeyDown(i, e)}
-                  onFocus={(e) => e.target.select()}
-                  disabled={loading}
-                  aria-label={`OTP digit ${i + 1}`}
-                  className={`w-11 h-14 sm:w-12 sm:h-16 text-center text-2xl font-bold rounded-xl bg-white border-2 text-[#0F2A2E] caret-[#E8772E] transition-all outline-none
-                    ${
-                      error
-                        ? "border-[#8E2A1F] focus:border-[#8E2A1F] focus:ring-4 focus:ring-[#8E2A1F]/15"
-                        : digit
-                        ? "border-[#E8772E]/60 focus:border-[#E8772E] focus:ring-4 focus:ring-[#E8772E]/15"
-                        : "border-[#E4DCCB] focus:border-[#E8772E] focus:ring-4 focus:ring-[#E8772E]/15"
-                    }
-                    disabled:bg-[#E9E3D6] disabled:text-[#A39C8F] disabled:cursor-not-allowed
-                  `}
-                />
-              ))}
-            </div>
-
-            {/* Error message */}
-            {error && (
-              <div className="text-center text-sm text-[#8E2A1F] font-medium">
-                {error}
-              </div>
-            )}
-
-            {/* Verify button — Savannah night text on ember (WCAG-safe) */}
-            <button
-              type="submit"
-              disabled={loading || !codeComplete}
-              className="w-full py-3 px-4 rounded-xl bg-[#E8772E] text-[#0F2A2E] font-semibold text-sm
-                         hover:bg-[#D4661F] shadow-lg shadow-[#E8772E]/30 transition-all
-                         active:bg-[#B34F12] active:text-white active:scale-[0.99]
-                         disabled:bg-[#E9E3D6] disabled:text-[#A39C8F] disabled:shadow-none disabled:cursor-not-allowed
-                         flex items-center justify-center gap-2 cursor-pointer
-                         focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#E8772E]"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Verifying...
-                </>
-              ) : (
-                <>
-                  <ShieldCheck className="w-4 h-4" />
-                  Verify Email
-                </>
-              )}
-            </button>
-          </form>
-
-          {/* Resend + Change email */}
-          <div className="flex items-center justify-between text-sm pt-2 border-t border-[#E4DCCB]">
-            <button
-              type="button"
-              onClick={handleResend}
-              disabled={resending || cooldown > 0}
-              className="flex items-center gap-1.5 text-[#B34F12] hover:text-[#E8772E] font-semibold
-                         transition-colors disabled:text-[#A39C8F] disabled:cursor-not-allowed
-                         rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#E8772E]"
-            >
-              <RefreshCw
-                className={`w-3.5 h-3.5 ${resending ? "animate-spin" : ""}`}
+              {/* Full-bleed image */}
+              <img
+                src="/lion_image_step_two.webp"
+                alt="SafariGen — verify your email"
+                className="absolute inset-0 h-full w-full object-cover"
               />
-              {cooldown > 0
-                ? `Resend in ${cooldown}s`
-                : resending
-                ? "Sending..."
-                : "Resend code"}
-            </button>
 
-            <button
-              type="button"
-              onClick={() => navigate("/register")}
-              className="flex items-center gap-1 text-[#6B6459] hover:text-[#0F2A2E] transition-colors
-                         rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#E8772E]"
-            >
-              <ArrowLeft className="w-3.5 h-3.5" />
-              Change email
-            </button>
-          </div>
+              {/* Legibility overlays */}
+              <div className="absolute inset-0 bg-gradient-to-t from-[#08191C] via-[#0F2A2E]/50 to-[#0F2A2E]/10" />
+              <div className="absolute inset-0 bg-gradient-to-br from-[#0F2A2E]/45 via-transparent to-transparent" />
 
-          {/* Trust badge */}
-          <div className="flex items-center justify-center gap-2 text-[11px] text-[#6B6459]">
-            <ShieldCheck className="w-3.5 h-3.5 text-[#E8772E]" />
-            Secure verification — never share this code with anyone.
+              {/* Gutter shadow — inner edge of the left page */}
+              <div
+                aria-hidden
+                className="hidden lg:block absolute inset-y-0 right-0 w-14 bg-gradient-to-l from-black/60 via-black/15 to-transparent z-10"
+              />
+
+              {/* Page content */}
+              <div className="relative z-10 flex h-full flex-col justify-between gap-10 p-6 sm:p-8 lg:p-10">
+
+                {/* Logo */}
+                <Link
+                  to="/"
+                  className="inline-flex items-center gap-1 w-fit focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#E8772E]"
+                >
+                  <span className="text-2xl sm:text-3xl font-black tracking-tight text-[#E8772E]">
+                    Safari<span className="text-[#FDFBF6]">Gen</span>
+                  </span>
+                </Link>
+
+                {/* Headline + value props */}
+                <div className="space-y-6">
+
+                  {/* Step badge */}
+                  <div className="inline-flex w-fit items-center gap-2.5 border border-[#F6F1E7]/20 bg-[#0F2A2E]/60 px-3.5 py-2 backdrop-blur-md">
+                    <Sparkles className="w-3.5 h-3.5 text-[#F2B544]" />
+                    <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#F2B544]">
+                      Step 2 / 3
+                    </span>
+                    <span className="h-3 w-px bg-[#F6F1E7]/25" />
+                    <span className="text-[11px] font-semibold text-[#F6F1E7]/85">
+                      Verify email
+                    </span>
+                  </div>
+
+                  <h2 className="font-serif text-[26px] sm:text-[30px] lg:text-[34px] font-bold leading-[1.12] tracking-tight text-[#FDFBF6]">
+                    Verify your email to{" "}
+                    <span className="italic text-[#F2B544]">activate</span>{" "}
+                    your account.
+                  </h2>
+
+                  <div className="space-y-3 text-sm text-[#F6F1E7]/80">
+                    {[
+                      "Turn raw booking data into clean schedules in seconds.",
+                      "Seamless real-time team and group collaboration.",
+                      "Direct client-ready handoffs with custom branding.",
+                    ].map((feature, i) => (
+                      <div key={i} className="flex items-start gap-3">
+                        <CheckCircle2 className="w-4.5 h-4.5 mt-0.5 text-[#F2B544] shrink-0" />
+                        <span className="leading-relaxed">{feature}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Copyright footer */}
+                <div className="text-[11px] tracking-wide text-[#F6F1E7]/40">
+                  © {new Date().getFullYear()} SafariGen Ltd. All rights reserved.
+                </div>
+              </div>
+            </aside>
+
+            {/* ─── RIGHT PAGE — OTP Form ─── */}
+            <section className="relative lg:col-span-3 bg-[#FDFBF6] p-6 sm:p-9 lg:p-12">
+
+              {/* Gutter shadow — inner edge of the right page */}
+              <div
+                aria-hidden
+                className="hidden lg:block absolute inset-y-0 left-0 w-14 bg-gradient-to-r from-[#0F2A2E]/10 via-[#0F2A2E]/[0.03] to-transparent pointer-events-none z-10"
+              />
+
+              {/* Mobile logo */}
+              <div className="lg:hidden mb-6 text-center">
+                <Link
+                  to="/"
+                  className="inline-flex items-center gap-1 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#E8772E]"
+                >
+                  <span className="text-3xl font-black tracking-tight text-[#E8772E]">
+                    Safari<span className="text-[#0F2A2E]">Gen</span>
+                  </span>
+                </Link>
+              </div>
+
+              {/* Card header */}
+              <header className="relative pb-6 mb-7 border-b border-[#E4DCCB]">
+                <div className="flex items-center gap-3 mb-3">
+                  <span className="h-px w-8 bg-[#E8772E]" />
+                  <span className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#B34F12]">
+                    Email verification
+                  </span>
+                </div>
+
+                <div className="flex items-start gap-4">
+                  {/* Icon badge */}
+                  <div className="w-12 h-12 shrink-0 bg-[#FCE9DA] border border-[#E4DCCB] flex items-center justify-center">
+                    <Mail className="w-6 h-6 text-[#B34F12]" />
+                  </div>
+
+                  <div className="flex-1">
+                    <h1 className="font-serif text-[26px] sm:text-[28px] font-bold tracking-tight text-[#0F2A2E] leading-tight">
+                      Check your inbox
+                    </h1>
+                    <p className="text-xs sm:text-sm text-[#6B6459] mt-1.5 leading-relaxed">
+                      We sent a 6-digit code to{" "}
+                      <span className="font-semibold text-[#0F2A2E] break-all">
+                        {email || "your email"}
+                      </span>
+                      . The code expires in{" "}
+                      <strong className="text-[#0F2A2E]">5 minutes</strong>.
+                    </p>
+                  </div>
+                </div>
+              </header>
+
+              <form onSubmit={handleSubmit} className="space-y-6">
+
+                {/* ── OTP inputs ── */}
+                <div className="space-y-2">
+                  <label className="block text-xs font-semibold text-[#0F2A2E]/80 uppercase tracking-wider">
+                    Verification code
+                  </label>
+
+                  <div
+                    className="flex items-center justify-center gap-2 sm:gap-3"
+                    onPaste={handlePaste}
+                  >
+                    {digits.map((digit, i) => (
+                      <input
+                        key={i}
+                        ref={(el) => (inputRefs.current[i] = el)}
+                        type="text"
+                        inputMode="numeric"
+                        autoComplete="one-time-code"
+                        maxLength={1}
+                        value={digit}
+                        onChange={(e) => handleChange(i, e.target.value)}
+                        onKeyDown={(e) => handleKeyDown(i, e)}
+                        onFocus={(e) => e.target.select()}
+                        disabled={loading}
+                        aria-label={`OTP digit ${i + 1}`}
+                        className={`w-11 h-14 sm:w-12 sm:h-16 text-center text-2xl font-bold bg-white border text-[#0F2A2E] caret-[#E8772E] transition-all duration-200 outline-none focus:ring-2
+                          ${
+                            error
+                              ? "border-[#8E2A1F] focus:border-[#8E2A1F] focus:ring-[#8E2A1F]/20"
+                              : digit
+                              ? "border-[#E8772E]/60 focus:border-[#E8772E] focus:ring-[#E8772E]/20"
+                              : "border-[#E4DCCB] focus:border-[#E8772E] focus:ring-[#E8772E]/20"
+                          }
+                          disabled:bg-[#E9E3D6] disabled:text-[#A39C8F] disabled:cursor-not-allowed
+                        `}
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                {/* ── Error message ── */}
+                {error && (
+                  <p className="text-xs text-[#8E2A1F] text-center font-medium animate-in slide-in-from-top-1">
+                    {error}
+                  </p>
+                )}
+
+                {/* ── Verify button ── */}
+                <div className="pt-1">
+                  <button
+                    type="submit"
+                    disabled={loading || !codeComplete}
+                    className="w-full relative flex items-center justify-center gap-2.5 bg-[#E8772E] text-[#0F2A2E] font-semibold py-3.5 px-6 text-sm sm:text-base
+                               transition-all duration-300
+                               hover:bg-[#D4661F] hover:shadow-xl hover:shadow-[#E8772E]/30 hover:-translate-y-0.5
+                               active:bg-[#B34F12] active:text-white active:translate-y-0 active:scale-[0.99]
+                               disabled:bg-[#E9E3D6] disabled:text-[#A39C8F] disabled:shadow-none disabled:translate-y-0 disabled:cursor-not-allowed disabled:hover:bg-[#E9E3D6]
+                               shadow-lg shadow-[#E8772E]/25
+                               focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#E8772E]"
+                  >
+                    {loading ? (
+                      <>
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                        Verifying…
+                      </>
+                    ) : (
+                      <>
+                        <ShieldCheck className="w-5 h-5" />
+                        Verify email
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
+
+              {/* ── Resend + Change email ── */}
+              <div className="flex items-center justify-between text-xs sm:text-sm pt-5 mt-6 border-t border-[#E4DCCB]">
+                <button
+                  type="button"
+                  onClick={handleResend}
+                  disabled={resending || cooldown > 0}
+                  className="flex items-center gap-1.5 text-[#B34F12] hover:text-[#E8772E] font-semibold
+                             transition-colors disabled:text-[#A39C8F] disabled:cursor-not-allowed
+                             focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#E8772E]"
+                >
+                  <RefreshCw
+                    className={`w-3.5 h-3.5 ${resending ? "animate-spin" : ""}`}
+                  />
+                  {cooldown > 0
+                    ? `Resend in ${cooldown}s`
+                    : resending
+                    ? "Sending…"
+                    : "Resend code"}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => navigate("/register")}
+                  className="flex items-center gap-1 text-[#6B6459] hover:text-[#0F2A2E] transition-colors
+                             focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#E8772E]"
+                >
+                  <ArrowLeft className="w-3.5 h-3.5" />
+                  Change email
+                </button>
+              </div>
+
+              {/* ── Trust badge ── */}
+              <div className="flex items-center justify-center gap-2 pt-5 mt-2 text-[11px] tracking-wide text-[#6B6459]">
+                <ShieldCheck className="w-3.5 h-3.5 text-[#E8772E]" />
+                Secure verification — never share this code with anyone.
+              </div>
+            </section>
+
+            {/* ─── The Spine ─── */}
+            <div
+              aria-hidden
+              className="hidden lg:block absolute inset-y-0 left-[40%] w-px bg-[#0F2A2E]/20 z-10 pointer-events-none"
+            />
           </div>
         </div>
       </div>

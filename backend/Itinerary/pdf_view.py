@@ -7,7 +7,8 @@ from Clients.models import ClientRequestInformation
 from Itinerary.models import ItineraryVersion
 
 
-REACT_PRINT_URL = os.getenv("REACT_PRINT_URL", "http://localhost:5173/print")
+# REACT_PRINT_URL = os.getenv("REACT_PRINT_URL", "http://localhost:5173/print")
+REACT_PRINT_URL = os.getenv("REACT_PRINT_URL", "https://app.safarigen.io/print")
 PDF_TIMEOUT_MS = 180000
 PDF_READY_TIMEOUT_MS = 45000
 
