@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { useEffect } from "react";
 import {
   Users,
   Compass,
@@ -20,6 +21,16 @@ export default function StaffDashboardPage() {
   // Replace with real  user context or backend props
 
   const {email, fullName, userRole, Logout} = useContext(AuthenticationContext);
+
+
+    useEffect(() => {
+        document.title = "Staff | SafariGen";    
+        return () => {
+          document.title = "SafariGen | Automated Safari Itinerary & Tour Pricing";
+        };
+      }, []);
+    
+
 
   const user = {
     name: fullName,

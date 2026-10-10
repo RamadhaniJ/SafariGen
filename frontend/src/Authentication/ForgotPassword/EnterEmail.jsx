@@ -1,4 +1,4 @@
-import { use, useContext, useState } from "react";
+import { use, useContext, useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import api from "../../Apis/api";
@@ -20,6 +20,15 @@ export default function EnterEmailToResetPasswordPage() {
     const [email, setEmail] = useState("");
     const [errors, setErrors] = useState({});
     const [loading, setLoading] = useState(false);
+
+
+    useEffect(() => {
+        document.title = "Forgot password | SafariGen";    
+        return () => {
+          document.title = "SafariGen | Automated Safari Itinerary & Tour Pricing";
+        };
+      }, []);
+    
 
 
 

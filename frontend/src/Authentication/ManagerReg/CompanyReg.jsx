@@ -168,6 +168,16 @@ export default function CompanyDetailsStep3Page() {
         return Object.keys(newErrors).length === 0;
     };
 
+    useEffect(() => {
+     document.title = "Company Detail | SafariGen";
+
+
+    return () => {
+      document.title = "SafariGen | Automated Safari Itinerary & Tour Pricing";
+    };
+  }, []);
+
+
     // --- SUBMIT HANDLER ---
     const handleSubmit = async (e) => {
         e.preventDefault();

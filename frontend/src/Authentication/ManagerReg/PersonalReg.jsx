@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState , useEffect} from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import api from "../../Apis/api";
@@ -78,6 +78,15 @@ export default function PersonalDetailStep1Page() {
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
+
+  useEffect(() => {
+    document.title = "Sign Up | SafariGen";
+
+
+    return () => {
+      document.title = "SafariGen | Automated Safari Itinerary & Tour Pricing";
+    };
+  }, []);
 
   // ---------- Submit ----------
   const handleSubmit = async (e) => {

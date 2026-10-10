@@ -33,6 +33,7 @@ export default function VerifyEmailByOTPpage({ email: emailProp }) {
 
   // ---------- Redirect kama hakuna email ----------
   useEffect(() => {
+    document.title = "OTP Verify | SafariGen";
     if (!email) {
       toast.error("Please register first.");
       navigate("/register", { replace: true });
@@ -50,6 +51,8 @@ export default function VerifyEmailByOTPpage({ email: emailProp }) {
     const timer = setInterval(() => setCooldown((c) => c - 1), 1000);
     return () => clearInterval(timer);
   }, [cooldown]);
+
+
 
   // ---------- Handle typing ----------
   const handleChange = (index, value) => {

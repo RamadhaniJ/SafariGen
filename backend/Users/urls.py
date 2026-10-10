@@ -1,4 +1,4 @@
-from Users.views import (
+from Users.views import ( 
       ManagerProfileView, 
      ShortInfoView,
 

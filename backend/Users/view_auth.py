@@ -1,3 +1,4 @@
+import uuid
 from django.shortcuts import render
 from django.contrib.auth import authenticate, password_validation
 
@@ -96,14 +97,37 @@ class CustomTokenRefreshView(TokenRefreshView):
         if refresh_token is None:
             return Response(
                 {"detail":"Authentication required"},
-                status=status.HTTP_403_FORBIDDEN
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+
+        try:
+            refresh_obj = RefreshToken(refresh_token)
+        except TokenError:
+            return Response(
+                {"detail":"Authentication required"},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+
+        token_session_id = refresh_obj.get("session_id")
+        try:
+            user = CustomUserModel.objects.get(id = refresh_obj["user_id"])
+        except CustomUserModel.DoesNotExist:
+            return Response(
+                {"detail":"Authentication required"},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+
+        if not token_session_id or str(token_session_id) != str(user.current_session_id):
+            return Response(
+                {"detail":"Your session has expired because you signed in on another device."},
+                status=status.HTTP_401_UNAUTHORIZED
             )
 
         request.data["refresh"] = refresh_token
         
         try:
             response = super().post(request, *args, **kwargs)
-        except (TokenError, InvalidToken, CustomUserModel.DoesNotExist):
+        except (TokenError, InvalidToken):
             return Response({"detail":"Authentication required"},
                             status=status.HTTP_403_FORBIDDEN
                             )
@@ -119,6 +143,20 @@ class CustomTokenRefreshView(TokenRefreshView):
                     samesite='None',
                     path='/',
                     expires= timezone.now() + datetime.timedelta(minutes=30)
+                )
+
+            new_refresh = response.data.get("refresh")
+            if new_refresh:
+                response.set_cookie(
+                    key="refresh_code",
+                    value=new_refresh,
+                    httponly=True,
+                    secure=True,
+                    samesite='None',
+                    path='/',
+                    expires=timezone.now() + datetime.timedelta(days=14)
+                    
+
                 )
 
         return response
@@ -343,7 +381,7 @@ class CompaniesDataToCreateStaffView(generics.ListAPIView):
 
 
     
-
+ 
 
 class LoginView(APIView):
     permission_classes = [AllowAny]
@@ -384,11 +422,22 @@ class LoginView(APIView):
                 status=status.HTTP_403_FORBIDDEN
             )
 
+
+        new_session_id = str(uuid.uuid4())
+        user.current_session_id = new_session_id
+        user.save(update_fields=["current_session_id"])
     
         refresh = RefreshToken.for_user(user)
+
+        refresh["session_id"] = new_session_id
         access = refresh.access_token
+        access["session_id"] = new_session_id
 
         response = Response({"message":"Welcome Back"}, status=status.HTTP_200_OK)
+
+        response.delete_cookie(key="access_code", path="/")
+        response.delete_cookie(key="refresh_code", path="/")
+
         response.set_cookie(
             key="access_code",
             value=str(access),
@@ -421,9 +470,13 @@ class LoginView(APIView):
 
 class LogoutView(APIView):
     authentication_classes = [CustomJwtCookiesAuth]
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
 
     def post(self, request):
+        if hasattr(request, "user") and request.user and  request.user.is_authenticated:
+            request.user.current_session_id = None
+            request.user.save(update_fields = ["current_session_id"])
+
         response = Response({"message":"Logged out"}, status=status.HTTP_200_OK)
 
         response.delete_cookie(

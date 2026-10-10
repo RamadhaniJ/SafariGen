@@ -1,4 +1,4 @@
-import { useContext, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import api from "../Apis/api";
@@ -49,6 +49,16 @@ export default function LogInPage() {
     return Object.keys(newErrors).length === 0;
   };
 
+
+  useEffect(() => {
+    document.title = "Sign In | SafariGen";
+    
+    return () => {
+      document.title = "SafariGen | Automated Safari Itinerary & Tour Pricing";
+    };
+  }, []);
+
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -59,7 +69,19 @@ export default function LogInPage() {
 
     setLoading(true);
 
+
     try {
+
+      try{
+          await api.post("account/users/logout", {}, {
+            _skipInterceptor: true 
+          }); 
+        
+      }catch(logoutError){
+        console.log("Logout Crash: ", logoutError)
+      }
+
+
       const resp = await api.post("account/users/login", {
         email,
         password,

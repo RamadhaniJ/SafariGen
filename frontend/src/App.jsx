@@ -12,6 +12,11 @@ import AutoRedirectorAuthenticatedUsers from './Apis/Redirector';
 import PersonalDetailStep1Page from './Authentication/ManagerReg/PersonalReg';
 import VerifyEmailByOTPpage from './Authentication/ManagerReg/OptPage';
 import CompanyDetailsStep3Page from './Authentication/ManagerReg/CompanyReg';
+
+
+//============================================================
+//======================== OTHERS ===============
+import NotFoundComponent from './Component/NotFound';
  
   
   
@@ -101,6 +106,7 @@ function App() {
         <Routes>
 
 
+
           {/* registrations and logins  */}
           <Route path='/register' element={
             <AutoRedirectorAuthenticatedUsers>
@@ -156,7 +162,8 @@ function App() {
        
           {/* system public pages  */}
           {/* ================FOR PREVIEW =================  */}
-          <Route path='preview/safari/itinerary/:client_id/:version_id' element={<PreviewDigitalPageItineraryMain/>} />
+          <Route path='preview/safari/itinerary/:client_id/:version_id'
+           element={<PreviewDigitalPageItineraryMain/>} />
          
           {/* ================FOR DOWNLOADING =================  */}
           <Route path="/print/:client_id/:version_id" element={<ItineraryDownloadToPdf />}/>
@@ -229,6 +236,10 @@ function App() {
 
 
           </Route>
+
+
+          <Route path='*' element={<NotFoundComponent/>} />
+
 
 
         </Routes>

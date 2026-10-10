@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState , useEffect} from "react";
 import { Link, useNavigate , useLocation} from "react-router-dom";
 import { toast } from "sonner";
 import api from "../../Apis/api";
@@ -64,6 +64,18 @@ export default function PasswordResetPage({ reset_token: tokenProp }) {
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
+
+
+
+
+    useEffect(() => {
+        document.title = "Forgot password | SafariGen";    
+        return () => {
+          document.title = "SafariGen | Automated Safari Itinerary & Tour Pricing";
+        };
+      }, []);
+    
+
 
   // ---------- Submit ----------
   const handleSubmit = async (e) => {

@@ -33,6 +33,7 @@ export default function EnterOTPToResetPasswordPage({ email: emailProp }) {
 
   // ---------- Redirect kama hakuna email ----------
   useEffect(() => {
+    document.title = "Forgot password | SafariGen";  
     if (!email) {
       toast.error("Please enter your email first.");
       navigate("/reset-password", { replace: true });

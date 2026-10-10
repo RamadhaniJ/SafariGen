@@ -1,6 +1,7 @@
 import { createContext, useEffect, useState } from "react";
-import api from "./api";
-import { replace, useNavigate } from "react-router-dom";
+import api, { setSessionExpiredHandler } from "./api";
+import { useNavigate } from "react-router-dom";
+import SessionAlertModal from "../Component/SessionAlert";
  
 
 export const AuthenticationContext = createContext(); 
@@ -11,9 +12,10 @@ export default function AuthProvider({children}) {
     const [email, setEmail] = useState(null);
     const [fullName, setFullName] = useState(null);
     const [isAuthenticated, setIsAuthenticated] = useState(false);
-
     const [loading, setLoading] = useState(true);
-    const navigate = useNavigate
+    const navigate = useNavigate()
+    
+    const [showSessionModal, setShowSessionModal] = useState(false);
 
     const authenticator = async ()=>{
         try{
@@ -24,8 +26,6 @@ export default function AuthProvider({children}) {
                 setEmail(resp.data.user.email)
                 setFullName(resp.data.user.full_name)
 
-
-                console.log(".......is pass here? .........")
                 return resp.data.user;
 
             }
@@ -41,24 +41,46 @@ export default function AuthProvider({children}) {
 
     useEffect(()=>{
         authenticator();
+
+        setSessionExpiredHandler(()=>{
+            setIsAuthenticated(false);
+            setShowSessionModal(true);
+        });
+
+        return ()=>{
+            setSessionExpiredHandler(null);
+        };
+
     }, []);
 
     const Logout = async ()=>{
         try{
-            const resp = await api.post("account/users/logout")
+            const resp = await api.post("account/users/logout", {}, { _skipInterceptor: true });
         }catch(error){
-            setIsAuthenticated(false);
+           console.log("logout ignore: ", error)
+
+        }finally{
+             setIsAuthenticated(false);
             setUserRole(null);
             setEmail(null);
             setFullName(null);
             navigate("/", {replace: true})
-
         }
 
     }
     return(
         <AuthenticationContext.Provider value={{email,fullName, userRole, isAuthenticated, Logout, loading, refreshAuth: authenticator}}>
             {children}
+
+            <SessionAlertModal
+            isOpen={showSessionModal}
+            title="Session Ended"
+            message="You have been signed in on another device. For your security, please log in again."
+            onClose={()=> {
+                setShowSessionModal(false);
+                navigate("/", {replace : true});
+            }}
+             />
         </AuthenticationContext.Provider>
     )
     
