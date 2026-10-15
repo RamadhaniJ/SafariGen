@@ -187,7 +187,7 @@ class DestinationImage(models.Model):
         ("Wildlife","wildlife"),
         ("Hotel","hotel"),
         ("Sunset","sunset"),
-    ])
+    ], blank=True, null=True)
     caption = models.CharField(max_length=200, blank=True, null=True)
 
     created_at = models.DateTimeField(auto_now_add=True)

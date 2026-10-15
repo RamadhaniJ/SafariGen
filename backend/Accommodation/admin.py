@@ -1,59 +1,3 @@
-# from django.contrib import admin
-# from Accommodation.models import Accommodation, AccommodationSeason, AccommodationRoomType, RoomRate,  AccommodationDescription, AccommodationImages
-
-# # Register your models here. 
-
-# @admin.register(Accommodation)
-# class AdminAccommodation(admin.ModelAdmin):
-#     list_display = ["destination","name","is_sponsored","sponsored_priority","sponsored_until","tag_label","created_at"]
-#     list_filter = ["is_sponsored","sponsored_priority","tag_label"]
-#     search_fields = ["name"]
-
-
-
-
-
-# @admin.register(AccommodationSeason)
-# class AdminAccommodationSeason(admin.ModelAdmin):
-#     list_display = ["name","start_month","end_month","created_at"]
-#     list_filter = ["created_at"]
-#     search_fields = ["name"]
-
-
-
-# @admin.register(AccommodationRoomType)
-# class AdminAccommodationRoomType(admin.ModelAdmin):
-#     list_display = ["accommodation","name","capacity","created_at"]
-#     list_filter = ["capacity"]
-#     search_fields = ["name"]
-
-
-
-
-# @admin.register(RoomRate)
-# class AdminAccommodationRoomRate(admin.ModelAdmin):
-#     list_display = ["room_type","season","meal_plan","price_per_night","created_at"]
-#     list_filter = ["season"]
-#     search_fields = ["season","room_type"]
-
-
-
-# @admin.register(AccommodationDescription)
-# class AdminAccommodationDescription(admin.ModelAdmin):
-#     list_display = ["accommodation","created_at"]
-#     search_fields = ["accommodation"]
-
-
-
-# @admin.register(AccommodationImages)
-# class AdminAccommodationDescription(admin.ModelAdmin):
-#     list_display = ["accommodation","tag","created_at"]
-#     search_fields = ["accommodation"]
-
-
-
-
-
 from django.contrib import admin
 from django.urls import path
 from django.template.response import TemplateResponse
@@ -83,7 +27,7 @@ class AdminAccommodation(admin.ModelAdmin):
         "is_sponsored", 
         "sponsored_priority", 
         "tag_label", 
-        "bulk_upload_link", # Kitufe cha Bulk Upload kwenye List
+        "bulk_upload_link", 
         "created_at"
     ]
     list_filter = ["is_sponsored", "sponsored_priority", "tag_label"]

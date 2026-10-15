@@ -1,0 +1,79 @@
+{% extends "admin/base_site.html" %}
+{% load admin_urls %}
+
+{% block content %}
+<div style="padding: 20px; max-width: 1000px; margin: 0 auto;">
+    
+    <div style="margin-bottom: 25px;">
+        <!-- URL imerekebishwa kuwa lowercase -->
+        <a href="{% url opts|admin_urlname:'change' destination.pk %}" class="button" style="background: #417690; color: white; padding: 10px 18px; text-decoration: none; border-radius: 4px; font-weight: bold;">
+            ← Return To {{ destination.name }}
+        </a>
+        <h1 style="margin-top: 20px; font-size: 24px; color: #333;">
+            📸 Bulk Image Upload: <span style="color: #417690;">{{ destination.name }}</span>
+        </h1>
+    </div>
+
+    <!-- Tag Selection -->
+    <div style="background: #fff; padding: 15px 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-bottom: 20px; display: flex; align-items: center; gap: 15px;">
+        <label for="image-tag-select" style="font-weight: bold; color: #333; font-size: 15px;">Chagua Tag ya Picha zote:</label>
+        <select id="image-tag-select" style="padding: 8px 12px; border-radius: 4px; border: 1px solid #ccc; font-size: 14px;">
+            {% for tag_code, tag_label in tag_choices %}
+                <option value="{{ tag_code }}">{{ tag_label }}</option>
+            {% endfor %}
+        </select>
+        <span style="font-size: 13px; color: #666;">(Caption will be filled automatically you can edit later)</span>
+    </div>
+
+    <!-- Form ya Dropzone -->
+    <!-- URL imerekebishwa hapa pia -->
+    <form action="{% url opts|admin_urlname:'bulk_upload' destination.pk %}" method="post" enctype="multipart/form-data" class="dropzone" id="destination-dropzone" style="border: 2px dashed #417690; border-radius: 12px; background: #f8fafc; padding: 40px; text-align: center; cursor: pointer;">
+        {% csrf_token %}
+        <div class="dz-message">
+            <div style="font-size: 48px; margin-bottom: 10px;">🖼️</div>
+            <h2 style="font-size: 20px; color: #2c3e50; margin-bottom: 8px;">Drag Destination Images Here</h2>
+            <p style="color: #7f8c8d; font-size: 13px;">You can drag multiple at once (Max 15MB )</p>
+        </div>
+    </form>
+
+</div>
+
+<link rel="stylesheet" href="https://unpkg.com/dropzone@5/dist/min/dropzone.min.css" type="text/css" />
+<script src="https://unpkg.com/dropzone@5/dist/min/dropzone.min.js"></script>
+
+<script>
+    Dropzone.autoDiscover = false;
+
+    document.addEventListener("DOMContentLoaded", function () {
+        var uploadUrl = "{% url opts|admin_urlname:'bulk_upload' destination.pk %}";
+
+        var myDropzone = new Dropzone("#destination-dropzone", {
+            url: uploadUrl,
+            paramName: "images",
+            maxFilesize: 15,
+            acceptedFiles: "image/*",
+            parallelUploads: 5,
+            timeout: 180000,
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            init: function() {
+                this.on("sending", function(file, xhr, formData) {
+                    var selectedTag = document.getElementById("image-tag-select").value;
+                    formData.append("tag", selectedTag);
+                });
+
+                this.on("success", function(file, response) {
+                    console.log("Images saved:", response);
+                    file.previewElement.classList.add("dz-success");
+                });
+
+                this.on("error", function(file, response) {
+                    console.error("Failed to upload Images:", response);
+                    file.previewElement.classList.add("dz-error");
+                });
+            }
+        });
+    });
+</script>
+{% endblock %}
