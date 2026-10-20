@@ -8,12 +8,11 @@ const api = axios.create({
     withCredentials: true,
 });
 
-// 🌉 Hii ndiyo "bridge" itakayoshikwa na AuthProvider
 let onSessionExpiredCallback = null;
 
 export const setSessionExpiredHandler = (callback) => {
     onSessionExpiredCallback = callback;
-    // 🚨 HAMNA setTimeout hapa! Redirect itafanywa na Modal.
+
 };
 
 // ────────────────────────────────────────────────────────────
@@ -66,11 +65,13 @@ api.interceptors.response.use(
         const detail = String(error.response?.data?.detail || "").toLowerCase();
 
         const onAuthPage = window.location.pathname === "/" || window.location.pathname === "/login";
+        const onPrintPage = window.location.pathname.startsWith("/print");
+
         const sessionExpired = detail.includes("signed in on another device") || detail.includes("invalid session data");
 
         // ─── SCENARIO A: Session invalidated by another device ───
         if ((status === 401 || status === 403) && sessionExpired) {
-            if (!onAuthPage) {
+            if (!onAuthPage && !onPrintPage) {
                 try {
                     await api.post("account/users/logout", {}, { _skipInterceptor: true });
                 } catch (logoutError) {
@@ -98,7 +99,7 @@ api.interceptors.response.use(
                 await triggerRefresh();
                 return api(originalRequest);
             } catch (refreshError) {
-                if (onSessionExpiredCallback) {
+                if (!onPrintPage && onSessionExpiredCallback) {
                     onSessionExpiredCallback();
                 } else {
                     window.location.href = "/";

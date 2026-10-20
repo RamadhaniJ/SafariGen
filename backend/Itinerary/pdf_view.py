@@ -1,4 +1,6 @@
 import os
+import subprocess
+import tempfile
 import html
 from django.http import HttpResponse, JsonResponse
 from playwright.sync_api import sync_playwright, TimeoutError as PlaywrightTimeout
@@ -12,12 +14,68 @@ REACT_PRINT_URL = os.getenv("REACT_PRINT_URL", "https://app.safarigen.io/print")
 PDF_TIMEOUT_MS = 180000
 PDF_READY_TIMEOUT_MS = 45000
 
-import time
-t0 = time.time()
+
+
+
+
+
+
+def compress_pdf_with_ghostscript(pdf_bytes, quality="ebook"):
+
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_in:
+        tmp_in.write(pdf_bytes)
+        input_path = tmp_in.name
+
+    output_path = input_path.replace(".pdf", "_compressed.pdf")
+
+    try:
+        command = [
+            "gs",
+            "-sDEVICE=pdfwrite",
+            "-dCompatibilityLevel=1.4",
+            f"-dPDFSETTINGS=/{quality}",
+            "-dNOPAUSE",
+            "-dQUIET",
+            "-dBATCH",
+            f"-sOutputFile={output_path}",
+            input_path,
+        ]
+        subprocess.run(command, check=True, capture_output=True, timeout=120)
+
+        with open(output_path, "rb") as f:
+            compressed_bytes = f.read()
+
+        return compressed_bytes
+
+    except FileNotFoundError:
+        print("[GS] Ghostscript (gs) not installed we using the initial PDF")
+        return pdf_bytes
+
+    except subprocess.CalledProcessError as e:
+        # Kama Ghostscript ikishindikana, rudisha PDF ya awali
+        print(f"Ghostscript compression failed: {e}")
+        return pdf_bytes
+    except subprocess.TimeoutExpired:
+        print("[GS] Ghostscript user longer time (timeout) using initial PDF")
+        return pdf_bytes
+    except Exception as e:
+        print(f"GS [Ghostscript] unknown error happen {e} using the initial pdf")
+        return pdf_bytes
+    finally:
+        if os.path.exists(input_path):
+            os.unlink(input_path)
+        if os.path.exists(output_path):
+            os.unlink(output_path)
+
+
+
+
 
 
 
 def generate_safari_pdf(request, client_id, version_id):
+    import time
+    t0 = time.time()
 
     try:
         client = ItineraryVersion.objects.get(id=version_id, client_request_id = client_id )
@@ -246,7 +304,7 @@ def generate_safari_pdf(request, client_id, version_id):
             </div>
             """
 
-            pdf_bytes = page.pdf(
+            pdf_bytes =  page.pdf(
                 format="A4",
                 print_background=True,
                 prefer_css_page_size=False,
@@ -261,10 +319,12 @@ def generate_safari_pdf(request, client_id, version_id):
                 },
             )
             print(f"[TIMING] pdf: {time.time() - t0:.1f}s")
-            print(f"[TIMING] TOTAL: {time.time() - t0:.1f}s")
 
             context.close()
             browser.close()
+            pdf_bytes = compress_pdf_with_ghostscript(pdf_bytes, quality="ebook")
+            print(f"[TIMING] TOTAL and include compression time : {time.time() - t0:.1f}s")
+
  
     except PlaywrightTimeout as e:
         return JsonResponse({"error": f"Timeout on generation of PDF: {str(e)}"}, status=504)
@@ -276,3 +336,7 @@ def generate_safari_pdf(request, client_id, version_id):
     response["Content-Disposition"] = f'attachment; filename="{filename}"'
     response["Content-Length"] = len(pdf_bytes)
     return response
+
+
+
+

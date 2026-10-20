@@ -43,6 +43,8 @@ export default function AuthProvider({children}) {
         authenticator();
 
         setSessionExpiredHandler(()=>{
+            if (window.location.pathname.startsWith("/print")) return;
+            
             setIsAuthenticated(false);
             setShowSessionModal(true);
         });
