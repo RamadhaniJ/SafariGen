@@ -1,7 +1,8 @@
 import axios from "axios";
 // Ondoa 'toast' kwa sababu hatuitumii tena
 
-const BASE_API_URL = "http://127.0.0.1:8000/api/";
+// const BASE_API_URL = "http://127.0.0.1:8000/api/";
+const BASE_API_URL = import.meta.env.VITE_API_URL || "/api/";
 
 const api = axios.create({
     baseURL: BASE_API_URL,
@@ -99,9 +100,12 @@ api.interceptors.response.use(
                 await triggerRefresh();
                 return api(originalRequest);
             } catch (refreshError) {
-                if (!onPrintPage && onSessionExpiredCallback) {
+                if (onPrintPage){
+                    return Promise.reject(refreshError)
+                }
+                if (onSessionExpiredCallback) {
                     onSessionExpiredCallback();
-                } else {
+                } else{
                     window.location.href = "/";
                 }
                 return Promise.reject(refreshError);

@@ -40,11 +40,14 @@ export default function AuthProvider({children}) {
     }
 
     useEffect(()=>{
+        if (window.location.pathname.startsWith("/print")){
+            setLoading(false);
+              return;
+         }
+
         authenticator();
 
         setSessionExpiredHandler(()=>{
-            // if (window.location.pathname.startsWith("/print")) return;
-
             setIsAuthenticated(false);
             setShowSessionModal(true);
         });

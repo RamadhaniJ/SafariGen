@@ -89,7 +89,7 @@ export default function FooterDigitalSection({
     }
 
     setDownloading(true);
-
+ 
     let step = 0;
     const toastId = toast.loading(PDF_STEPS[0]);
 

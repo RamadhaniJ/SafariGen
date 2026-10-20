@@ -4,7 +4,7 @@ from Itinerary.views import ( BulkCreateDayByDayItineraryView,
                                 PricingBreakdownToStaffView ,
                                  ListItineraryWithVersionView,
                                   DeleteSpecificItineraryVersionView,
-                                    )
+                                     )
 
 from Itinerary.view_itinerary_edit import (
                                            GetVersionForEditView,

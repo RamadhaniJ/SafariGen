@@ -47,7 +47,7 @@ export default function ItineraryDownloadToPdf() {
     }
 
     if (client_id) load();
-    return () => {
+    return () => { 
       cancelled = true;
     };
   }, [client_id]);
