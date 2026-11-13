@@ -1,19 +1,51 @@
 from django.db import models
 from uuid6 import uuid7
 from Itinerary.models import ItineraryVersion
-from Users.models import StaffProfile
+from Users.models import CustomUserModel
 
 # Create your models here.
-
-## admin can see chanel name here?. 
 class CommunicationChannel(models.Model):
     id = models.UUIDField(default=uuid7, primary_key=True, editable=False)
     name = models.CharField(unique=True, max_length=100, help_text="EMAIL, WHATSAPP, SMS")
     is_active= models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
+    def __str__(self):  
+        return self.name
+
+
+
+
+
+ 
+
+class EmailTemplate(models.Model):
+    id = models.UUIDField(default= uuid7, primary_key=True, editable=False)
+    name = models.CharField(max_length=100, unique=True, help_text="eg. Default safari Quote, (Follow up Template, Template for new Quote.)")
+
+    subject = models.CharField(
+        max_length=255,
+        help_text="eg. Your safari Proposal: {{tour_code}} - {{company_name}}"
+    )
+
+    body_html = models.TextField(
+        help_text="HTML body of email {{client_ame}}, {{tour_title}}, {{grand_total}}, {{preview_link}}"
+
+    )
+
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+
     def __str__(self):
         return self.name
+
+    
+
+
+
+
 
 
  
@@ -31,7 +63,12 @@ class CommunicationLog(models.Model):
         CommunicationChannel, 
         on_delete=models.CASCADE, 
         related_name="channel_logs"
-        )
+        ) 
+
+    template = models.ForeignKey(
+        EmailTemplate,
+        on_delete=models.SET_NULL, blank=True, null=True
+    )
 
     recipient = models.CharField(
         max_length=255,
@@ -39,9 +76,10 @@ class CommunicationLog(models.Model):
     )
 
     sent_by = models.ForeignKey(
-        StaffProfile,
+        CustomUserModel,
         on_delete=models.CASCADE,
-        related_name="user_sent_quote"
+        related_name="user_sent_quote",
+        blank=True, null=True
     )
 
     STATUS_CHOICES = [
@@ -79,28 +117,5 @@ class CommunicationLog(models.Model):
 
 
 
- 
-
-class EmailTemplate(models.Model):
-    id = models.UUIDField(default= uuid7, primary_key=True, editable=False)
-    name = models.CharField(max_length=100, unique=True, help_text="eg. Default safari Quote, (Follow up Template, Template for new Quote.)")
-
-    subject = models.CharField(
-        max_length=255,
-        help_text="eg. Your safari Proposal: {{tour_code}} - {{company_name}}"
-    )
-
-    body_html = models.TextField(
-        help_text="HTML body of email {{client_ame}}, {{tour_title}}, {{grand_total}}, {{preview_link}}"
-
-    )
-
-    is_active = models.BooleanField(default=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
 
 
-    def __str__(self):
-        return self.name
-
-    

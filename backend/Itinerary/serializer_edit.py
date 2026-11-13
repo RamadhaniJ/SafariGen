@@ -78,7 +78,7 @@ class ActivitiesDataForEditSerializer(serializers.ModelSerializer):
     via_location_name = serializers.CharField(source="via_location.location_name", read_only=True, allow_null=True)
     end_location_name = serializers.CharField(source="end_location.location_name", read_only=True, allow_null=True)
     moment_display = serializers.CharField(source="get_moment_display", read_only=True)
-    price_per = serializers.CharField(source="get_price_per_display", read_only=True)
+    price_per = serializers.CharField(read_only=True)
 
     class Meta:
         model = Activity
@@ -135,7 +135,7 @@ class SelectedDayRoomForEditSerializer(serializers.ModelSerializer):
 class DayByDayItinenaryDataForEditSerialzier(serializers.ModelSerializer):
     activities = ActivitiesDataForEditSerializer(source="day_activities", many=True, read_only=True)
     optional_meals = OptionalMealForEditSerializer(source="day_optionals_meal", many=True, read_only=True)
-    selected_rooms = SelectedDayRoomForEditSerializer(many=True, read_only=True)  # ← MAREKEBISHO HAPA
+    selected_rooms = SelectedDayRoomForEditSerializer(many=True, read_only=True)  
 
     destination_name = serializers.CharField(source="destination.name", read_only=True, allow_null=True)
     accommodation_name = serializers.CharField(source="accommodation.name", read_only=True, allow_null=True)
@@ -475,11 +475,7 @@ class EditItinerarySerializer(serializers.Serializer):
             # HATUA 3: Tengeneza Days, Activities, Meals, Rooms
             # ==========================================
             
-            # Hesabu total travellers (kwa ajili ya pricing)
-            total_travellers = sum(
-                t['number'] for t in client_info['travellers']
-                if t['age_category'] != 'INFANT'
-            )
+    
             
             for day_data in days_data:
                 dest_id = day_data.get("destination_id")
@@ -507,21 +503,7 @@ class EditItinerarySerializer(serializers.Serializer):
                 
                 # Save Activities
                 for act_data in day_data.get('activities', []):
-                    final_transit_fee = act_data.get('transit_fee')
-                    if act_data.get('transit_fee_included') and final_transit_fee is not None:
-                        if act_data.get('transit_fee_per') == 'Pax':
-                            final_transit_fee = float(final_transit_fee) * total_travellers
-                        elif act_data.get('transit_fee_per') == 'Vehicle':
-                            vehicles = math.ceil(total_travellers / 6)
-                            final_transit_fee = vehicles * float(final_transit_fee)
-                    
-                    final_optional_price = act_data.get('optional_activity_price')
-                    if act_data.get('is_optional') and final_optional_price is not None:
-                        if act_data.get('price_per') == 'PerPersonal':
-                            final_optional_price = float(final_optional_price) * total_travellers
-                        elif act_data.get('price_per') == 'PerVehicle':
-                            vehicles = math.ceil(total_travellers / 6)
-                            final_optional_price = float(final_optional_price) * vehicles
+                  
                     
                     Activity.objects.create(
                         day_itinerary=itinerary_day,
@@ -534,11 +516,11 @@ class EditItinerarySerializer(serializers.Serializer):
                         moment=act_data['moment'],
 
                         transit_fee_included=act_data.get('transit_fee_included', False),
-                        transit_fee=final_transit_fee,
+                        transit_fee=act_data.get("transit_fee"),
                         transit_fee_per=act_data.get('transit_fee_per'),
 
                         is_optional=act_data.get('is_optional', False),
-                        optional_activity_price=final_optional_price,
+                        optional_activity_price=act_data.get("optional_activity_price"),
                         price_per=act_data.get('price_per')
                     )
                 
@@ -577,3 +559,4 @@ class EditItinerarySerializer(serializers.Serializer):
 
 
 
+ 

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import api from "../Apis/api";
 import GlobalLoader from "../Component/Loader";
-import { toast } from "sonner";
+import { toast } from "react-toastify";
 import { 
     User, 
     Building2, 
@@ -123,8 +123,17 @@ export default function ManagerProfilePage() {
             setManagerData(resp.data);
             setAvatar(null); // Reset file object after success
         } catch (error) {
-            const errorMsg = error.response?.data?.detail || "Failed to update profile";
-            toast.error(errorMsg);
+           const errorMsg = error?.response?.data;
+            if (errorMsg?.detail){
+              toast.error(errorMsg.detail)
+            }else if (errorMsg && typeof errorMsg === "object"){
+              Object.entries(errorMsg).forEach(([val, msg])=>{
+                const text = Array.isArray(msg) ? msg.join(", ") : String(msg);
+                toast.error(`${val} : ${text}`)
+              })
+            }else{
+              toast.error( "Failed to update profile." );
+          }
         } finally {
             setSaving(false);
         }

@@ -5,7 +5,7 @@ import AccommodationComponentGlobal from "../../Components/Accommodation";
 import OptionalMealComponentGlobal from "../../Components/Meals";
 import ActivitiesComponentGlobal from "../../Components/Activities";
 
-import { toast } from "sonner";
+import { toast } from "react-toastify";
 import api from "../../../Apis/api";
 import useItineraryPricingGlobal from "../Hooks/useItineraryPrice";
 import SmartPricingBreakdownGlobal from "../BreakDown/PriceBreakDown";
@@ -111,6 +111,8 @@ export default function ItinerariesEditingGlobal({ dataToEdit, clientId, version
     if (typeof onUpdateDays === "function") onUpdateDays(dayConfigs);
   }, [dayConfigs, onUpdateDays]);
 
+
+
   // --- DAY NUMBERING LOGIC ---
   const enrichedDays = useMemo(() => {
     let currentDay = 1;
@@ -190,14 +192,27 @@ export default function ItinerariesEditingGlobal({ dataToEdit, clientId, version
     setDayConfigs((prev) => {
       const updated = [...prev];
       const currentConfig = updated[index];
-      const autoDest = accPayload?.destination_id ? { id: accPayload.destination_id, name: accPayload.destination_name } : currentConfig.autoFilledDestination;
+
+       let nextDestination = currentConfig.destination;     // preserve
+       let nextAutoFilled = currentConfig.autoFilledDestination;
+
+    if (!nextDestination && accPayload?.destination_id) {
+      nextAutoFilled = { id: accPayload.destination_id, name: accPayload.destination_name };
+      nextDestination = nextAutoFilled;
+    }
+
+    if (accPayload === null) {
+      nextAutoFilled = currentConfig.autoFilledDestination;
+    }
+
+
 
       updated[index] = {
         ...currentConfig,
         accommodation: accPayload,
         selectedRooms: accPayload?.selected_rooms || currentConfig.selectedRooms,
-        autoFilledDestination: autoDest,
-        destination: autoDest || currentConfig.destination,
+        autoFilledDestination: nextAutoFilled,
+        destination: nextDestination,
       };
 
       if (index === updated.length - 1 && accPayload !== null && currentConfig.accommodation === null) {
@@ -312,7 +327,15 @@ export default function ItinerariesEditingGlobal({ dataToEdit, clientId, version
     } catch (error) {
       setSavingMsg("Failed to save.");
       const errData = error.response?.data;
-      const errorMsg = errData?.message || errData?.non_field_errors?.[0] || errData?.days?.[0] || errData?.client_info?.tour_title?.[0] || "Failed to save itinerary. Check all required fields.";
+      if (errData?.detail){
+        toast.error(errData?.detail)
+      }else if (errData && typeof errData === "object"){
+        Object.entries(errData).forEach(([val, msg])=>{
+          const text = Array.isArray(msg) ? msg.join(", ") : String(msg)
+          toast.error(`${val} : ${text}`)
+        })
+      } 
+      const errorMsg = errData?.message  || errData?.non_field_errors?.[0] || errData?.days?.[0] || errData?.client_info?.tour_title?.[0] || "Failed to save itinerary. Check all required fields.";
       toast.error(typeof errorMsg === "string" ? errorMsg : "Failed to save itinerary.");
       setTimeout(() => setShowSavingModal(false), 1500);
     }

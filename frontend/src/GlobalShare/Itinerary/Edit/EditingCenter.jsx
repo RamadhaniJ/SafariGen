@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useNavigate, useParams } from 'react-router-dom';
 import api from "../../../Apis/api";
 import GlobalLoader from "../../../Component/Loader";
-import { toast } from "sonner";
+import { toast } from "react-toastify";
 import { User2, Compass, Sparkles, Check, ArrowLeft } from "lucide-react";
 import ClientRequestInformationEditingGlobal from "./EditClietRequest";
 import ItinerariesEditingGlobal from "./EditItinerary";
@@ -21,8 +21,17 @@ export default function ItineraryEditingCenterGlobal() {
             const resp = await api.get(`itinerary/edit/itinerary/${versionId}/`);
             setEditData(resp.data);
         } catch (error) {
-            const errorMsg = error.response?.data?.detail || "Failed to load itinerary data";
-            toast.error(errorMsg);
+            const errorMsg = error.response?.data;
+            if (errorMsg?.detail){
+            toast.error(errorMsg?.detail)
+            }else if (errorMsg && typeof errorMsg === "object"){
+            Object.entries(errorMsg).forEach(([val, msg])=>{
+                const text = Array.isArray(msg) ? msg.join(", ") : String(msg);
+                toast.error(`${val} : ${text}`);
+            })
+            }else{
+                toast.error("Failed to load itinerary data");
+            }
             navigate(-1);
         } finally {
             setIsLoading(false);

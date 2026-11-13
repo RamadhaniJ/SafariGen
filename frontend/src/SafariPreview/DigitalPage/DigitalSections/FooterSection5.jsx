@@ -9,7 +9,7 @@ import {
   Mail,
   ArrowUpRight,
 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "react-toastify";
 import api from "../../../Apis/api";
 import PriceBreakdownSideBarSubSection from "../SubSections/SideBar-Pricing";
 
@@ -120,9 +120,18 @@ export default function FooterDigitalSection({
       clearInterval(intervalRef.current);
       toast.success("Download success! 🔥", { id: toastId });
     } catch (error) {
-      console.error("PDF error:", error);
       clearInterval(intervalRef.current);
-      toast.error("Failed to generate PDF. Try again later.", { id: toastId });
+      const errorMsg = error?.response?.data;
+      if (errorMsg?.detail){
+        toast.error(errorMsg.detail)
+      }else if (errorMsg && typeof errorMsg === "object"){
+        Object.entries(errorMsg).forEach(([val, msg])=>{
+          const text = Array.isArray(msg) ? msg.join(", ") : String(msg);
+          toast.error(`${val} : ${text}`)
+        })
+      }else{
+        toast.error("Failed to generate PDF. Try again later.", { id: toastId });
+    }
     } finally {
       clearInterval(intervalRef.current);
       setDownloading(false);

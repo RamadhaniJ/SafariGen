@@ -1,9 +1,10 @@
 from rest_framework import serializers
 from Destinations.models import Destination, DestinationFee, DestinationSeason
 from Clients.models import ClientRequestInformation
+from Clients.utils.residency import determine_residency, is_eac_country
 from django.db.models import Q
 
-
+  
 class DestinationListSerializer(serializers.ModelSerializer):
     calculated_park_fee = serializers.SerializerMethodField()
     calculated_rescue_fee = serializers.SerializerMethodField()
@@ -93,23 +94,13 @@ class DestinationListSerializer(serializers.ModelSerializer):
           travellers = client_request.travellers.all()
           total_category_fee = 0.00
 
-          eac_countries = [
-                "🇨🇩 Democratic Republic of the Congo",
-                 "🇹🇿 Tanzania","🇺🇬 Uganda", "South Sudan",
-                 "Somalia","Kenya","Rwanda", "Burundi"
-          ]
+      
 
           for traveller in travellers:
                 if traveller.age_category == "INFANT":
                       continue 
 
-                if traveller.is_resident:
-                      residency = "RESIDENT" 
-                elif any(country in getattr(client_request.client_requested, "country", "") for country in eac_countries):
-                      residency = "EAC_MEMBER"
-                else:
-                      residency = "NON_RESIDENT"
-
+                residency = determine_residency(traveller=traveller, client_request=client_request)
 
                 season_filter = Q(seasons__season_name__iexact="ALL_YEAR")
                 if current_season:

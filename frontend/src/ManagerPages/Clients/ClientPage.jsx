@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import api from "../../Apis/api";
 import GlobalLoader from "../../Component/Loader";
-import { toast } from "sonner";
+import { toast } from "react-toastify";
 import {
     Edit3,
     Mail,
@@ -61,8 +61,18 @@ export default function ClientListPage() {
         try {
             const resp = await api.get("clients/list/clients/");
             setClients(resp.data);
-        } catch (err) {
-            toast.error(err.response?.data?.detail || "Failed to load clients.");
+        } catch (error) {
+        const data = error.response?.data;
+        if (data?.detail) {
+          toast.error(data.detail);
+        } else if (data && typeof data === "object") {
+          Object.entries(data).forEach(([field, msgs]) => {
+            const text = Array.isArray(msgs) ? msgs.join(", ") : String(msgs);
+            toast.error(`${field}: ${text}`);
+          });
+        } else {
+          toast.error("Something went wrong. Please try again.");
+        }
         } finally {
             setLoad(false);
         } 

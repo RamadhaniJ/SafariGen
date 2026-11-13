@@ -29,7 +29,7 @@ from decimal import Decimal
 # Zanzibar Island
 # Pemba Island & Mafia Island
 
-
+ 
 
 ACCOMMODATION_DATA = {
     "Arusha City": [
@@ -4541,6 +4541,8 @@ ACCOMMODATION_DATA = {
 
 
 ],
+
+
 "Lake Manyara National Park":[
     {
     "name": "Lake Manyara Tortilis Camp",

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Users, Bed, Plus, Trash2, Calendar, MapPin, ArrowRight, ChevronDown, Globe, CheckCircle2 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "react-toastify";
 import DestinationComponentGlobal from "../../Components/Destination";
 import normalizeDestinationInputHelper from "../Helpers/EditingHelpers";
 

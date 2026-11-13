@@ -5,7 +5,7 @@ import GlobalLoader from "../../Component/Loader";
 import ManagerCreateCompanyPoUp from "./createCompany";
 import ManagerEditCompanyPoUp from "./editCompany";
 
-import { toast } from "sonner";
+import { toast } from "react-toastify";
 import {
   Building2,
   Plus,

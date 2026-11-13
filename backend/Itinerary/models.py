@@ -7,7 +7,7 @@ from Clients.models import ClientRequestInformation
 from Users.models import CustomUserModel
 
 # Create your models here.
-  
+   
   
 class MainDayByDayItinerary(models.Model):
     id = models.UUIDField(default=uuid7, primary_key=True, editable=False)
@@ -295,7 +295,7 @@ class ItineraryPricingBreakdownItem(models.Model):
 
 
    
- 
+   
 
 
 class ItineraryVersion(models.Model):

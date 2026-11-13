@@ -1,6 +1,6 @@
-import { useContext, useEffect, useState } from "react";
+import { useContext, useEffect, useState , useMemo} from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { toast } from "sonner";
+import { toast } from "react-toastify";
 import {
   MapPin, Calendar, Users, Star, Phone, Mail, Building2,
   Utensils, Sparkles, Map, Bed, Clock, CheckCircle2,
@@ -42,6 +42,14 @@ export default function PreviewDigitalPageItineraryMain() {
     }
   };
 
+
+  const navigateHelper = useMemo(()=>{
+            if (userRole === "MANAGER") return '/dashboard/manager';
+            if (userRole === "STAFF") return '/staff/dashboard';
+            return null;
+        }, [userRole])
+    
+
   useEffect(() => {
     if (client_id) fetchSafariData();
   }, [client_id, version_id]);
@@ -81,6 +89,43 @@ export default function PreviewDigitalPageItineraryMain() {
       <DigitalMapSection safariData={safariData} />
       <DayByDayDigitalSection safariData={safariData} />
       <FooterDigitalSection safariData={safariData} client_id={client_id} version_id={version_id} />
+
+      
+
+      {/* --- VERTICAL CLOSE BUTTON (left edge, staff only) --- */}
+{isAuthenticated && (userRole === "STAFF" || userRole === "MANAGER") && (
+  <button
+    onClick={() => {
+     navigate(`${navigateHelper}/quotes/list/`)
+    }}
+    aria-label="Close and return to previous page"
+    className="group fixed left-0 top-1/2 z-40 -translate-y-1/2
+               flex flex-col items-center justify-center
+               rounded-r-2xl border border-l-0 border-stone-300/60
+               bg-white/85 backdrop-blur-xl
+               px-2 py-4
+               shadow-[0_8px_24px_-12px_rgba(0,0,0,0.25)]
+               transition-all duration-300 ease-out
+               hover:bg-white hover:px-2.5
+               hover:shadow-[0_12px_32px_-12px_rgba(0,0,0,0.35)]
+               focus:outline-none focus-visible:ring-2 focus-visible:ring-[#B98B3E]/50
+               active:scale-[0.98]"
+  >
+    <span className="flex flex-col items-center gap-0.5">
+      {"Close".split("").map((ch, i) => (
+        <span
+          key={i}
+          className="text-[10px] font-bold uppercase tracking-wider leading-tight
+                     text-stone-700 transition-colors duration-200
+                     group-hover:text-[#B98B3E]"
+        >
+          {ch}
+        </span>
+      ))}
+    </span>
+  </button>
+)}
+
 
 
       {/* --- FLOATING ACTION BUTTON (FAB) FOR STAFF ONLY --- */}

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useContext, useMemo, use } from "react";
 import api from "../../Apis/api";
 import GlobalLoader from "../../Component/Loader";
-import { toast } from "sonner";
+import { toast } from "react-toastify";
 import EditClientInfoComponentGlobal from "./EditClientInfo";
 import {
     Edit3,
@@ -114,7 +114,19 @@ const openEditModal = (client) => {
             setShowDeletePop(false);
             setSelectedClient(null);
         } catch (err) {
-            toast.error(err.response?.data?.detail || "Could not delete client.");
+            const errorMsg = err.response?.data;
+            if (errorMsg?.detail){
+                toast.error(errorMsg?.detail);
+            }else if (errorMsg && typeof errorMsg === "object"){
+                Object.entries(errorMsg).forEach(([val, msg])=>{
+                   const text = Array.isArray(msg) ? msg.join(", ") : String(msg);
+                   toast.error(`${val} : ${text}`)
+
+                })
+            }else{
+              toast.error("Could not delete client.");
+
+            }
         } finally {
             setIsDeleting(false);
         }

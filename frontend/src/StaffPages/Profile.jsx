@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import api from "../Apis/api";
 import GlobalLoader from "../Component/Loader";
-import { toast } from "sonner";
+import { toast } from "react-toastify";
 import { 
     User, 
     Building2, 

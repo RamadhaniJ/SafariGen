@@ -13,7 +13,7 @@ import {
     Building2
 } from "lucide-react";
 import api from "../../Apis/api";
-import { toast } from "sonner";
+import { toast } from "react-toastify";
 
 export default function AccommodationComponentGlobal({ 
     clientId,
@@ -72,8 +72,17 @@ export default function AccommodationComponentGlobal({
             setAccommodationData(results);
             setIsDropdownOpen(results.length > 0);
         } catch (error) {
-            const errorMsg = error.response?.data?.detail?.message || "Failed to search accommodations";
-            toast.error(errorMsg);
+            const errorMsg = error.response?.data;
+            if (errorMsg?.detail){
+                toast.error(errorMsg?.detail)
+            }else if (errorMsg && typeof errorMsg === "object"){
+                Object.entries(errorMsg).forEach(([val, msg])=>{
+                    const text = Array.isArray(msg) ? msg.join(", ") : String(msg)
+                    toast.error(`${val} : ${text}`)
+                })
+            }else {
+               toast.error("Failed to search accommodations");
+            }
             setAccommodationData([]);
         } finally {
             setIsAccLoading(false);
@@ -139,7 +148,17 @@ export default function AccommodationComponentGlobal({
 
         } catch (error) {
             console.error("Failed to fetch accommodation details", error);
-            toast.error("Failed to load room options.");
+            const errorMsg = error.response?.data;
+            if (errorMsg?.detail){
+                toast.error(errorMsg?.detail)
+            }else if (errorMsg && typeof errorMsg === "object"){
+                Object.entries(errorMsg).forEach(([val, msg])=>{
+                    const text = Array.isArray(msg) ? msg.join(", ") : String(msg)
+                    toast.error(`${val} : ${text}`)
+                })
+            }else {
+                toast.error("Failed to load room options.");
+            }
         } finally {
             setIsAccLoading(false);
         }

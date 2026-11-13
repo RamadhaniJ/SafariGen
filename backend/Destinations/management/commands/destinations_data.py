@@ -36,7 +36,7 @@ DESTINATION_DATA = [
         "lng": 36.6833,
         "type": "City",
         "featured_img": "featuredImg/arusha_city.jpg",
-        "seasons": [
+        "seasons": [ 
             {
                 "season_name": "Standard Season",
                 "start_day": 1,

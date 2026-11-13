@@ -3,8 +3,8 @@ import {
   Users, Bed, Plus, Trash2, CheckCircle2, 
   Calendar, MapPin, ArrowRight, Loader2, 
   Globe, ChevronDown, UserCheck
-} from "lucide-react";
-import { toast } from "sonner";
+} from "lucide-react"; 
+import { toast } from "react-toastify";
 import api from "../../Apis/api";
 import DestinationComponentGlobal from "../Components/Destination";
 import { useNavigate, useParams } from "react-router-dom";
@@ -78,7 +78,17 @@ export default function CreateClientRequestInformationGlobal() {
         const resp = await api.get(`clients/update/clients/${clientId}/`);
         setClientInfo(resp.data);
       } catch (error) {
-        toast.error(error?.response?.data?.detail || "Failed to fetch client profile");
+        const errorMsg = error.response?.data;
+        if (errorMsg?.detail){
+          toast.error(errorMsg?.detail);
+        }else if (errorMsg && typeof errorMsg === "object"){
+          Object.entries(errorMsg).forEach(([field, msg])=>{
+            const text = Array.isArray(msg) ? msg.join(", ") : String(msg);
+            toast.error(`${field} : ${text}`);
+          })
+        }else {
+          toast.error("Failed to fetch client profile");
+        }
       } finally {
         setIsFetching(false);
       }
@@ -198,7 +208,9 @@ export default function CreateClientRequestInformationGlobal() {
       }, 1500);
     } catch (error) {
       const errDetail = error.response?.data;
-      if (typeof errDetail === "object") {
+      if (errDetail?.detail){
+        toast.error(errDetail?.detail);
+      } else if (errDetail && typeof errDetail === "object") {
         Object.entries(errDetail).forEach(([key, val]) => {
           toast.error(`${key.toUpperCase()}: ${Array.isArray(val) ? val[0] : val}`);
         });

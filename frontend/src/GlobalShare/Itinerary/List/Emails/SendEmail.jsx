@@ -1,11 +1,14 @@
  import { useState, useEffect } from "react";
  import { Mail, X, Loader2, Send, MessageSquare, Check } from "lucide-react";
  import api from "../../../../Apis/api";
- import { toast } from "sonner";
+//  import { toast } from "sonner";
+ import { toast } from "react-toastify";
  import { EmailEditorWrapper } from "./RichEditor";
- 
+//  import {useSnackbar} from 'notistack' 
+  
  export default function SendEmailToClientGlobalPopUp({
-   client_id, version_id, client_name, tour_title, version_number, company_name = "Our Safari Team",
+   client_id, version_id, client_name, tour_title, version_number, company_name,
+  tour_code, grand_total, price_per_person,
    onClose, onSuccess,
  }) {
    const [channels, setChannels] = useState([]);
@@ -17,8 +20,8 @@
    const [subject, setSubject] = useState("");
    const [emailBody, setEmailBody] = useState("");
    const [isSending, setIsSending] = useState(false);
- 
-   const isEmailSelected = channels.find((c) => c.id === selectedChannelId)?.name?.toUpperCase() === "EMAIL";
+
+
  
    useEffect(() => {
      const onKey = (e) => { if (e.key === "Escape" && !isSending) onClose(); };
@@ -35,9 +38,14 @@
          ]);
          setChannels(channelsRes.data);
          setTemplates(templatesRes.data);
+
+         if (channelsRes.data.length > 0){
+          const emailChannel = 
+          channelsRes.data.find((c)=> c.name?.toUpperCase() === "EMAIL") || channelsRes.data[0];
+          setSelectedChannelId(emailChannel.id);
+         }
  
-         const emailChannel = channelsRes.data.find((ch) => ch.name.toUpperCase() === "EMAIL");
-         if (emailChannel) setSelectedChannelId(emailChannel.id);
+        
  
          if (templatesRes.data.length > 0) {
            const first = templatesRes.data[0];
@@ -48,8 +56,17 @@
            setEmailBody(replacePlaceholders(first.body_html)); 
          }
        } catch (error) {
-         console.error("Failed to fetch data", error);
-         toast.error("Failed to load email options");
+        const data = error.response?.data;
+        if (data?.detail) {
+          toast.error(data.detail);
+        } else if (data && typeof data === "object") {
+          Object.entries(data).forEach(([field, msgs]) => {
+            const text = Array.isArray(msgs) ? msgs.join(", ") : String(msgs);
+            toast.error(`${field}: ${text}`);
+          });
+        } else {
+          toast.error("Something went wrong. Please try again.");
+        }
        } finally {
          setIsLoading(false);
        }
@@ -63,10 +80,21 @@
      const selected = templates.find((t) => t.id === templateId);
      if (selected) {
        setSubject(replacePlaceholders(selected.subject));
-       setEmailBody(replacePlaceholders(selected.body_html)); // FIX 1: Call it here too!
+       setEmailBody(replacePlaceholders(selected.body_html)); 
      }
    };
- 
+
+
+  const formatMoney = (value) => {
+    const n = Number(value);
+    if (!Number.isFinite(n)) return "0.00";
+    return n.toLocaleString("en-US", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+  };
+
+
    const replacePlaceholders = (htmlString) => {
      if (!htmlString) return "";
      const safeClientName = client_name || "Valued Guest";
@@ -78,16 +106,17 @@
        .replace(/\{\{client_name\}\}/g, safeClientName)
        .replace(/\{\{tour_title\}\}/g, safeTourTitle)
        .replace(/\{\{company_name\}\}/g, safeCompanyName)
-       .replace(/\{\{tour_code\}\}/g, "SAF-2024") 
-       .replace(/\{\{grand_total\}\}/g, "0.00") 
        .replace(/\{\{preview_link\}\}/g, previewLink)
-       .replace(/\{\{custom_note_html\}\}/g, ""); 
+       .replace(/\{\{tour_code\}\}/g,   tour_code   || "SAF-0000")
+       .replace(/\{\{grand_total\}\}/g, formatMoney(grand_total))
+       .replace(/\{\{price_per_person\}\}/g, formatMoney(price_per_person))
+
    };
  
    const handleSubmit = async (e) => {
      e.preventDefault();
      if (!selectedChannelId || !selectedTemplateId) {
-       toast.error("Please select a valid channel and template.");
+         toast.error("Please select a valid channel and template.");
        return;
      }
      setIsSending(true);
@@ -97,18 +126,28 @@
          template_id: selectedTemplateId,
          channel_id: selectedChannelId,
          subject,
-         edited_body: emailBody,
+         body_html: emailBody,
          preview_link: previewLink,
        };
        await api.post(`communications/send-email/quote/${client_id}/${version_id}/`, payload);
-       toast.success("Email sent successfully!");
+        toast.success("Email sent successfully!");
        onSuccess(); 
      } catch (error) {
-       const errorMsg = error.response?.data?.error || error.response?.data?.detail || "Failed to send email.";
-       toast.error(errorMsg);
-     } finally {
+        const data = error.response?.data;
+ 
+        if (data?.detail) {
+          toast.error(data.detail);
+        } else if (data && typeof data === "object") {
+          Object.entries(data).forEach(([field, msgs]) => {
+            const text = Array.isArray(msgs) ? msgs.join(", ") : String(msgs);
+            toast.error(`${field}: ${text}`);
+          });
+        } else {
+          toast.error("Something went wrong. Please try again.");
+        }
+      } finally {
        setIsSending(false);
-     }
+     } 
    };
  
 
@@ -141,9 +180,6 @@
 
           {/* Header */}
           <div className="flex items-start gap-4 border-b border-[#E4DCCB] bg-[#F6F1E7]/50 px-6 py-5">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#E8772E] shadow-lg shadow-[#E8772E]/25">
-              <Mail className="h-5 w-5 text-[#0F2A2E]" />
-            </div>
             <div className="min-w-0 flex-1">
               <h3 className="text-base font-bold text-[#0F2A2E]">Send Itinerary</h3>
               <p className="mt-1 truncate text-sm text-[#6B6459]">
@@ -171,15 +207,17 @@
                 <div className="space-y-5 lg:col-span-1">
                   <div>
                     <SectionLabel>Channel</SectionLabel>
-                    <ChannelCard
-                      active={isEmailSelected}
-                      icon={<Mail className="h-4 w-4" />}
-                      label="Email"
+                    {channels.map((ch, i)=>(
+                      <ChannelCard
+                      active={selectedChannelId === ch.id}
+                      icon={<Mail className="h-4 w-4"/>}
+                      label={ch.name}
                       onClick={() => {
-                        const emailCh = channels.find((c) => c.name.toUpperCase() === "EMAIL");
-                        if (emailCh) setSelectedChannelId(emailCh.id);
+                        setSelectedChannelId(ch.id)
                       }}
                     />
+                    ))}
+                    
                   </div>
 
                   <div>
@@ -210,7 +248,7 @@
                     <SectionLabel>Subject</SectionLabel>
                     <input
                       type="text"
-                      value={subject}
+                      value={subject} // data zitakuja zikiwa na {{subject}} {{full_name}} so we needed to replace it okay
                       onChange={(e) => setSubject(e.target.value)}
                       className="w-full rounded-lg border border-[#E4DCCB] bg-white px-3 py-2.5 text-sm text-[#0F2A2E] placeholder:text-[#6B6459]/50 focus:border-[#E8772E] focus:outline-none focus:ring-2 focus:ring-[#E8772E]/20 transition-all"
                       required
@@ -224,7 +262,7 @@
                   <div className="group relative flex-1 overflow-hidden rounded-xl border border-[#E4DCCB] bg-white transition-all focus-within:border-[#E8772E]/50 focus-within:ring-2 focus-within:ring-[#E8772E]/15">
                     <EmailEditorWrapper
                       value={emailBody}
-                      onChange={setEmailBody}
+                      onChange={setEmailBody} // data zitakuja zikiwa na {{subject}} {{full_name}} so we needed to replace it okay
                       placeholder="Start typing your message to the client…"
                     />
                   </div>
@@ -246,7 +284,7 @@
 
               <button
                 type="submit"
-                disabled={isSending || !selectedChannelId}
+                disabled={isSending }
                 className="group relative flex items-center gap-2 overflow-hidden rounded-lg bg-[#E8772E] px-6 py-2.5 text-sm font-bold text-[#0F2A2E]
                            shadow-lg shadow-[#E8772E]/25 transition-all
                            hover:bg-[#D4661F] hover:shadow-xl hover:shadow-[#E8772E]/30 hover:-translate-y-0.5

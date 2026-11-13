@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { toast } from "sonner";
+import { toast } from "react-toastify";
 import {
   Receipt,
   ShieldCheck,
@@ -257,18 +257,6 @@ export default function DigitalPageHeaderSection({ safariData }) {
         </div>
 
         {/* Reading progress */}
-        <div
-          className="pointer-events-none absolute inset-x-0 -bottom-px h-[2px] overflow-hidden"
-          aria-hidden="true"
-        >
-          <div
-            className="h-full origin-left bg-stone-900 transition-opacity duration-300"
-            style={{
-              transform: `scaleX(${progress})`,
-              opacity: isScrolled ? 1 : 0,
-            }}
-          />
-        </div>
       </header>
 
       {/* ==================================================================== */}

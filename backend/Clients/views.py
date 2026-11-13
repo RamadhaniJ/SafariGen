@@ -35,7 +35,7 @@ class ShortCompanyInfoToCreateClientView(generics.ListAPIView):
               ).select_related(
                      "owner"
               )
- 
+  
 
 
 # 1. CLIENT PERSONAL INFORMATION VIEW
@@ -161,7 +161,7 @@ class SmallClientInfoToCreatItineraryView(generics.RetrieveUpdateAPIView):
           lookup_field = "id"
 
           def get_queryset(self):
-                                
+                                 
                  current_user= getattr(self.request, "user", None)
                  if current_user is not None:
                         company_ids =current_user.companies.values_list('id', flat=True)

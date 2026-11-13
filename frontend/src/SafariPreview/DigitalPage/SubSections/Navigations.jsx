@@ -1,7 +1,7 @@
 import React, {
   useCallback,
   useEffect,
-  useMemo,
+  useMemo, 
   useRef,
   useState,
 } from "react";
@@ -40,6 +40,27 @@ export default function StickyNavigationSubSection({ safariData, className = "" 
     days.length ? dayAnchorId(days[0]) : null
   );
   const [edges, setEdges] = useState({ left: false, right: false });
+  const [headerHeight, setHeaderHeight] = useState(64); 
+
+
+// Auto header measure 
+  useEffect(() => {
+  const measure = () => {
+    const header = document.querySelector('header.sticky, header.fixed');
+    if (header) setHeaderHeight(header.offsetHeight);
+  };
+  measure();
+  window.addEventListener('resize', measure);
+  // Measure again after fonts/images load
+  const t = setTimeout(measure, 300);
+  return () => {
+    window.removeEventListener('resize', measure);
+    clearTimeout(t);
+  };
+}, []);
+
+
+
 
   /* Pretty labels: "Day Three" / "Days Three–Five" ------------------ */
   const labels = useMemo(
@@ -57,8 +78,8 @@ export default function StickyNavigationSubSection({ safariData, className = "" 
 
   /* How much vertical space the sticky bar eats --------------------- */
   const getOffset = useCallback(
-    () => (barRef.current?.offsetHeight ?? 72) + 8,
-    []
+    () => (barRef.current?.offsetHeight ?? 72) + headerHeight + 8,
+    [headerHeight]
   );
 
   const prefersReduced = () =>
@@ -188,7 +209,8 @@ export default function StickyNavigationSubSection({ safariData, className = "" 
     <nav
       ref={barRef}
       aria-label="Itinerary day navigation"
-      className={`sticky top-0 z-40 w-full ${className}`}
+      style={{top : headerHeight}}
+      className={`sticky z-40 w-full ${className}`}
     >
       <style>{`
         .esn-strip { scrollbar-width: none; -ms-overflow-style: none; }

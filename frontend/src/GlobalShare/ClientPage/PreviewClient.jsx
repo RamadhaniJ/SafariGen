@@ -2,7 +2,7 @@ import { useEffect, useState, useContext, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import api from "../../Apis/api";
 import GlobalLoader from "../../Component/Loader";
-import { toast } from "sonner";
+import { toast } from "react-toastify";
 import { AuthenticationContext } from "../../Apis/AuthProvider";
 import {
   Edit2, User, Mail, Phone, Globe, Share2, Compass,
@@ -64,8 +64,19 @@ export default function PreviewClientInformationGlobal() {
         }
 
       } catch (error) {
-        const errorMsg = error.response?.data?.detail || "Failed to load client profile details.";
-        toast.error(errorMsg);
+        const errorMsg = error.response?.data;
+        if (errorMsg?.detail){
+            toast.error(errorMsg?.detail);
+        }else if (errorMsg && typeof errorMsg === "object"){
+            Object.entries(errorMsg).forEach(([val, msg])=>{
+                const text = Array.isArray(msg) ? msg.join(", ") : String(msg);
+                toast.error(`${val} : ${text}`)
+
+            })
+        }else{
+          toast.error("Failed to load client profile details.");
+
+        }
       } finally {
         setLoading(false);
       }

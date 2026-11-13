@@ -114,6 +114,7 @@ export default function StaffSideBar() {
               <NavLink
                 key={item.path}
                 to={item.path}
+                end={item.path === '/staff/dashboard'}
                 onClick={() => setIsMobileOpen(false)}
                 className="block focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#E8772E] rounded-xl"
               >

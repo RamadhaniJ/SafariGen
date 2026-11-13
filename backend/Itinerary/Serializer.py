@@ -240,23 +240,8 @@ class BulkItineraryCreateSerializer(serializers.Serializer):
                     )
 
                 for act_data  in day_data.get("activities", []):
-                    final_transit_fee = act_data.get("transit_fee")
-                    if act_data.get("transit_fee_included") and final_transit_fee is not None:
-                        if act_data.get("transit_fee_per") == "Pax":
-                            final_transit_fee = float(final_transit_fee) * total_travellers
-                        elif act_data.get("transit_fee_per") == "Vehicle":
-                            vehicles = math.ceil(total_travellers / 6)
-                            final_transit_fee = vehicles * float(final_transit_fee)
-
-                    final_optional_price = act_data.get("optional_activity_price")
-                    if act_data.get("is_optional") and final_optional_price is not None:
-                        if act_data.get("price_per") == "PerPersonal":
-                            final_optional_price = float(final_optional_price) * total_travellers
-                        elif act_data.get("price_per") == "PerVehicle":
-                            vehicles = math.ceil(total_travellers / 6)
-                            final_optional_price = float(final_optional_price) * vehicles
-
-
+                   
+                   
                     Activity.objects.create(
                         day_itinerary = itinerary_day,
                         activity_type_id = act_data["activity_type_id"],
@@ -268,11 +253,11 @@ class BulkItineraryCreateSerializer(serializers.Serializer):
                         moment = act_data["moment"],
 
                         transit_fee_included = act_data.get("transit_fee_included"),
-                        transit_fee = final_transit_fee,
+                        transit_fee = act_data.get("transit_fee"),
                         transit_fee_per = act_data.get("transit_fee_per"),
 
                         is_optional = act_data.get("is_optional"),
-                        optional_activity_price = final_optional_price,
+                        optional_activity_price = act_data.get("optional_activity_price"),
                         price_per = act_data.get("price_per")
                     )
 
@@ -340,16 +325,6 @@ class BulkItineraryCreateSerializer(serializers.Serializer):
     # ============PREVIEW========================================
     # 1. Activities preview   
     # ========================================================       
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -994,9 +969,10 @@ class VersionDetailSerializer(serializers.ModelSerializer):
     client_name = serializers.SerializerMethodField()
 
     created_by = serializers.ReadOnlyField(source="created_by.full_name")
+    company_name = serializers.SerializerMethodField()
      
     class Meta:
-        model = ItineraryVersion
+        model = ItineraryVersion 
         fields = (
             "id",
             "version_number",
@@ -1004,6 +980,7 @@ class VersionDetailSerializer(serializers.ModelSerializer):
             "is_current",
             "change_summary",
             "created_by", 
+            "company_name",
             "created_at",
 
 
@@ -1021,7 +998,22 @@ class VersionDetailSerializer(serializers.ModelSerializer):
             "client_name",
         )
     
- 
+    def get_company_name(self, obj):
+        # Prioridad 1: Company ya client (hii ndio tour operator anayemiliki lead)
+        try:
+            company = obj.client_request.client_requested.company
+            if company and company.name:
+                return company.name
+        except AttributeError:
+            pass
+        
+
+        if obj.created_by:
+            first_company = obj.created_by.companies.first()
+            if first_company:
+                return first_company.name
+        
+        return None
     
     def get_grand_total(self, obj):
         try:

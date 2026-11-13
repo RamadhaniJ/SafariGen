@@ -7,6 +7,8 @@ from django.utils import timezone
 from django.db import transaction
 from Configuration.models import ConfigurationData
 
+
+from Destinations.Serializer import DestinationListSerializer
 import math 
  
  
@@ -23,7 +25,7 @@ def track_model_changes(instance, validated_data):
                             }
     return changes
   
-
+ 
 
 # ===================== STEP 1. CREATE A CLIENTS INFORMATIONS 
 class ClientInformationSerializer(serializers.ModelSerializer):
@@ -203,7 +205,7 @@ class CreateClientRequestInformationSerializer(serializers.ModelSerializer):
     )
     end_destination = serializers.PrimaryKeyRelatedField(
         queryset = Destination.objects.all()
-    )
+    ) 
 
     client_requested = serializers.PrimaryKeyRelatedField(
         queryset = ClientInformation.objects.all(),
@@ -425,8 +427,8 @@ class ClientInformationToPreviewSerializer(serializers.ModelSerializer):
 
 
 class SmallClientInfoToBuildItinerarySerializer(serializers.ModelSerializer):
-    start_destination = serializers.ReadOnlyField(source="start_destination.name")
-    end_destination = serializers.ReadOnlyField(source="end_destination.name")
+    start_destination_info = serializers.SerializerMethodField()
+    end_destination_info = serializers.SerializerMethodField()
 
     travellers = TravellerSerializer(many=True, required=False)
     room_selected = RoomSelectionSerializer(many=True, required=False)
@@ -442,8 +444,8 @@ class SmallClientInfoToBuildItinerarySerializer(serializers.ModelSerializer):
             "tour_type","tour_length",
             "tour_start_date", 
 
-            "start_destination",
-            "end_destination",
+            "start_destination_info",
+            "end_destination_info",
 
             "vehicle_rent_pricing",
 
@@ -460,4 +462,29 @@ class SmallClientInfoToBuildItinerarySerializer(serializers.ModelSerializer):
             return {"vehicle_rent_pricing": 250.00} 
 
 
+    def get_start_destination_info(self, obj):
+        if not obj.start_destination:
+            return None
 
+        return DestinationListSerializer(
+            obj.start_destination,
+            context = {
+                "request": self.context.get("request"),
+                 "client_request_id": str(obj.id), 
+                }
+        ).data
+
+
+
+    def get_end_destination_info(self, obj):
+        if not obj.end_destination:
+            return None
+
+        return DestinationListSerializer(
+            obj.end_destination,
+            context = {
+                "request": self.context.get("request"),
+                 "client_request_id": str(obj.id), 
+                 }
+        ).data
+               

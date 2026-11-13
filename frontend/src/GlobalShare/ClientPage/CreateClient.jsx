@@ -1,11 +1,11 @@
 import { useState, useRef, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { toast } from 'sonner';
+import { toast } from 'react-toastify';
 import api from '../../Apis/api';
 import { AuthenticationContext } from '../../Apis/AuthProvider';
 import { User, Mail, Phone, Globe, ChevronDown, Loader2, CheckCircle2, Sparkles, Building2 } from 'lucide-react';
 import {COUNTRIES} from '../../Constants/Countries';
-
+ 
 const SALUTATIONS = ['Mr', 'Mrs', 'Ms', 'Prof', 'Dr'];
 const SOURCE_OPTIONS = ['Website', 'Facebook', 'Instagram', 'Agent'];
 
@@ -161,9 +161,9 @@ export default function CreateClientInformationGlobal() {
 
         if (!isFormValid()) {
             toast.error('Please fix the highlighted fields before continuing.');
-            return;
+            return; 
         }
-      
+       
 
         setIsSubmitting(true);
         try {
@@ -193,8 +193,17 @@ export default function CreateClientInformationGlobal() {
 
                 }, 1000);
         } catch (error) {
-            const message = error.response?.data?.detail || 'Check your network connection.';
-            toast.error(message);
+            const message = error.response?.data;
+            if (message?.detail){
+              toast.error(message?.detail);
+            }else if(message && typeof (message) === "object"){
+              Object.entries(message).forEach(([field, msg])=>{
+                const text = Array.isArray(msg) ? msg.join(", ") : String(msg)
+                toast.error(`${field} : ${text}`);
+              });
+            }else{ 
+            toast.error("Something went wrong. Please try again.");
+           }
         } finally {
             setIsSubmitting(false);
         }

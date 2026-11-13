@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import api from "../../Apis/api";
 import { COUNTRIES } from "../../Constants/Countries";
-import { toast } from "sonner";
+import { toast } from "react-toastify";
 import {
     Edit3,
     X,

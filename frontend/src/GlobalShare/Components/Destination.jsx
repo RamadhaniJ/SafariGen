@@ -1,16 +1,17 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { Search, Loader2, X, MapPin, Check } from "lucide-react";
 import api from "../../Apis/api";
-import { toast } from "sonner";
+import { toast } from "react-toastify";
 
 const DestinationComponentGlobal = ({ 
+  clientId,
   onSelect, 
-  initialValue = null,
+  initialValue = null, 
   autoFilledDestination = null,
  }) => {
 
   const bootstrap = initialValue || autoFilledDestination;
-  // --- States ---
+  // --- States --- 
   const [searchTerm, setSearchTerm] = useState(bootstrap?.name || "");
   const [selected, setSelected] = useState(bootstrap);
 
@@ -25,19 +26,73 @@ const DestinationComponentGlobal = ({
   const debounceTimer = useRef(null);
   const justSelectedRef = useRef(false); 
 
+
+  const autoFetchedIdsRef = useRef(new Set());
   useEffect(()=>{
     if(!autoFilledDestination) return;
 
-    if (selected?.id === autoFilledDestination.id) return;
+     const afId = autoFilledDestination.id;
+     const afName = autoFilledDestination.name;
+     if (!afId && !afName) return;
+
+
+    if (selected?.id === afId && selected?.destination_type) return;
 
     justSelectedRef.current = true;
     setSelected(autoFilledDestination);
-    setSearchTerm(autoFilledDestination.name || "");
+    setSearchTerm(afName || "");
     setResults([]);
     setIsOpen(false);
     setHighlightIndex(-1);
 
-  }, [autoFilledDestination, selected?.id]);
+    if (autoFilledDestination.destination_type) {
+      setSelected(autoFilledDestination);
+      if (onSelect) onSelect(autoFilledDestination);
+    return;
+  }
+
+    const idKey = String(afId || afName);
+    if (autoFetchedIdsRef.current.has(idKey)) return;
+    if (!clientId) return;
+
+    autoFetchedIdsRef.current.add(idKey);
+    (async () => {
+    try {
+      const resp = await api.get(`destination/live/search/destination/`, {
+        params: {
+          client_id: clientId,
+          search: afName || "",
+        },
+      });
+
+      const results = resp.data || [];
+      let full = null;
+      if (afId) full = results.find((d) => String(d.id) === String(afId));
+      if (!full) full = results.find((d) => d.name === afName);
+      if (!full) full = results[0];
+
+
+
+
+      if (full && full.destination_type) {
+        justSelectedRef.current = true;
+        setSelected(full);
+        setSearchTerm(full.name);
+        setResults([]);
+        setIsOpen(false);
+        if (onSelect) onSelect(full);   
+      }
+    } catch (err) {
+      console.error("Auto-fetch destination failed", err);
+    }
+  })();
+
+
+
+
+
+  }, [autoFilledDestination, selected?.id, clientId]);
+  
 
   // --- Search Function ---
   const searchDestinations = useCallback(async (query) => {
@@ -51,17 +106,31 @@ const DestinationComponentGlobal = ({
     setIsOpen(true);
     try {
       const response = await api.get(
-        `destination/live/search/destination/?search=${encodeURIComponent(query.trim())}`
+        `destination/live/search/destination/`,{
+          params: {
+                    client_id: clientId || "",
+                    search: query.trim(),
+                }
+        }
       );
       setResults(response.data || []);
     } catch (error) {
-      const errorMsg = error.response?.data?.detail || "Search failed. Please try again.";
-      toast.error(errorMsg);
+          const errorMsg = error.response?.data;
+          if (errorMsg?.detail){
+            toast.error(errorMsg?.detail)
+          }else if (errorMsg && typeof errorMsg === "object"){
+            Object.entries(errorMsg).forEach(([val, msg])=>{
+              const text = Array.isArray(msg) ? msg.join(", ") : String(msg);
+              toast.error(`${val} : ${text}`);
+            })
+          }else{
+             toast.error("Search failed. Please try again.");
+          }
       setResults([]);
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [clientId]);
 
   // --- Debounce Effect ---
   useEffect(() => {
@@ -82,13 +151,13 @@ const DestinationComponentGlobal = ({
 
   // --- Handlers ---
   const handleSelect = (item) => {
-    justSelectedRef.current = true; // ✅ NEW — flag BEFORE setSearchTerm so the effect skips
+    justSelectedRef.current = true; 
     setSelected(item);
     setSearchTerm(item.name);
     setResults([]);
     setIsOpen(false);
     setHighlightIndex(-1);
-    if (onSelect) onSelect({id: item.id, name: item.name});
+    if (onSelect) onSelect(item);
     inputRef.current?.blur();
   };
 

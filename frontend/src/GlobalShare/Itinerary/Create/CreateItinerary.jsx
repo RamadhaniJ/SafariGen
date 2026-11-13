@@ -4,7 +4,7 @@ import { History, UserPlus, ArrowRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { AuthenticationContext } from "../../../Apis/AuthProvider";
 import api from "../../../Apis/api";
-import { toast } from "sonner";
+import { toast } from "react-toastify";
 
 /* ── Small ornament divider ── */
 function Ornament({ className = "" }) {

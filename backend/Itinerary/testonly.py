@@ -1,6 +1,7 @@
 # Communication/views.py (Ndani ya SendItineraryQuoteEmailView.post)
  
         # 1. Prepare Context Data (Tumia fallback ya snapshot kama tulivyoongea awali)
+def context():
         context_data = {
             'client_name': f"{client_info.salutation} {client_info.first_name} {client_info.last_name}".strip(),
             'tour_title': version.snapshot_tour_title or version.client_request.tour_title,
@@ -65,7 +66,8 @@
             from_email=settings.DEFAULT_FROM_EMAIL,
             to=[secure_recipient_email],
             reply_to=[request.user.email],
-       2)
+       )
         email.attach_alternative(final_body_html, "text/html")
+        return None
 
         # ... (Code ya kutuma na kufanya log ibaki vilevile) ...

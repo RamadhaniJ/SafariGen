@@ -4,14 +4,14 @@ from Users.view_auth import IsStaffOrManager, IsManager, IsStaff
 from Users.authentication import CustomJwtCookiesAuth
 from Destinations.models import Destination
 from rest_framework.views import APIView
-
-
+ 
+ 
 from rest_framework import generics,status, filters
 from rest_framework.permissions import AllowAny, IsAuthenticated 
 from rest_framework.response import Response
 from django.db.models import Q, Case, When, Value, IntegerField
 
- 
+  
  
 # Create your views here. 
 

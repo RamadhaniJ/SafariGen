@@ -2,6 +2,9 @@ import { useState } from 'react';
 import { Routes, Route, BrowserRouter } from 'react-router-dom';
 import { Toaster } from 'sonner';
 
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css'; 
+
 // ========================= 1.AUTH , LOGINS & REGISTRATION PAGES.........
 import LogInPage from './Authentication/Login';
 import AuthProvider from './Apis/AuthProvider';
@@ -243,6 +246,17 @@ function App() {
 
 
         </Routes>
+      <ToastContainer 
+        position="top-right"
+        autoClose={4000}       
+        newestOnTop={true}     
+        closeOnClick={true}
+        rtl={false}
+        pauseOnFocusLoss={false} 
+        draggable={true}
+        pauseOnHover={true}
+        theme="colored"         // "colored", "dark", au "light"
+      />
     <Toaster richColors position='top-left' />
     </AuthProvider>
     </BrowserRouter>

@@ -7,7 +7,7 @@ import DestinationComponentGlobal from "../Components/Destination";
 import OptionalMealComponentGlobal from "../Components/Meals";
 
 import api from "../../Apis/api";
-import { toast } from 'sonner';
+import { toast } from 'react-toastify';
 import SmartPricingBreakdownGlobal from "../Itinerary/BreakDown/PriceBreakDown"
 import useItineraryPricingGlobal from "./Hooks/useItineraryPrice";
 
@@ -71,8 +71,8 @@ export default function ItineraryMainGlobal() {
 
       for (let i = 1; i <= totalDays; i++) {
         let autoDest = null;
-        if (i === 1 && data.start_destination) autoDest = data.start_destination;
-        else if (i === totalDays && data.end_destination) autoDest = data.end_destination;
+        if (i === 1 && data.start_destination_info) autoDest = data.start_destination_info;
+        else if (i === totalDays && data.end_destination_info) autoDest = data.end_destination_info;
 
         const isLastRow = i === totalDays;
 
@@ -89,8 +89,17 @@ export default function ItineraryMainGlobal() {
       }
       setDayConfigs(initialDays);
     } catch (error) {
-      const errorMsg = error?.response?.data?.detail || "Failed to fetch Client Data";
-      toast.error(errorMsg);
+      const errorMsg = error?.response?.data;
+      if (errorMsg?.detail){
+        toast.error(errorMsg?.detail)
+      }else if (errorMsg && typeof errorMsg === "object"){
+        Object.entries(errorMsg).forEach(([value, msg])=>{
+          const text = Array.isArray(msg) ? msg.join(", ") : String(msg);
+         toast.error(`${value} : ${text}`)
+        })
+      }else{
+         toast.error("Something went wrong try again.");
+      }
     } finally {
       setLoading(false);
     }
@@ -213,17 +222,29 @@ export default function ItineraryMainGlobal() {
     setDayConfigs(prev => {
       const updated = [...prev];
       const currentConfig = updated[index];
+
+      let nextDestination = currentConfig.destination;
+      let nextAutoFilled = currentConfig.autoFilledDestination;
+
+      if (!nextDestination && accPayload?.destination_id){
+        nextAutoFilled = {
+          id :accPayload.destination_id,
+          name: accPayload.destination_name
+        };
+        nextDestination = nextAutoFilled;
+      }
+
+      if (accPayload === null){
+        nextAutoFilled = currentConfig.autoFilledDestination;
+      }
       
-      const autoDest = accPayload?.destination_id ? {
-        id: accPayload.destination_id,
-        name: accPayload.destination_name
-      } : null;
 
       updated[index] = {
         ...currentConfig,
         accommodation: accPayload,
-        autoFilledDestination: autoDest,
-        destination: autoDest || currentConfig.destination
+        selectedRooms: accPayload?.selected_rooms || currentConfig.selectedRooms || [],
+        autoFilledDestination: nextAutoFilled,
+        destination: nextDestination,
       };
 
       // If accommodation is added to the LAST day, and it previously had none, add a new departure day.
@@ -237,6 +258,7 @@ export default function ItineraryMainGlobal() {
           accommodation: null,
           activities: [],
           optionalMeals: [],
+          selectedRooms: [],
         });
         toast.success("Accommodation added. A new departure day was automatically created.");
       }
@@ -383,8 +405,17 @@ export default function ItineraryMainGlobal() {
       }, 1500);
     } catch (error) {
       setSavingMsg("Failed to save.");
-      const errorMsg = error.response?.data?.message || error.response?.data?.non_field_errors?.[0] || "Failed to save itinerary. Check console for details.";
-      toast.error(errorMsg);
+      const errorMsg = error.response?.data;
+      if (errorMsg?.detail){
+        toast.error(errorMsg?.detail)
+      }else if (errorMsg && typeof errorMsg === "object"){
+        Object.entries(errorMsg).forEach(([val, msg])=>{
+         const text = Array.isArray(msg) ? msg.join(", ") : String(msg);
+         toast.error(`${val} : ${text}`);
+        })
+      }else {
+      toast.error("Something went wrong, Please try again");
+      }
       setTimeout(() => setShowSavingModal(false), 1500);
     }
   };
@@ -412,7 +443,7 @@ export default function ItineraryMainGlobal() {
   // ==========================================
 // 5. RENDER
 // ==========================================
-if (loading) {
+if (loading) { 
   return (
     <div className="min-h-screen bg-[#F6F1E7] flex flex-col items-center justify-center text-[#0F2A2E] gap-4">
       <div className="relative">
@@ -642,6 +673,7 @@ return (
 
                   <DestinationComponentGlobal
                     clientId={clientId}
+                    initialValue={dayConfig.destination}
                     autoFilledDestination={dayConfig.autoFilledDestination}
                     onSelect={(destObj) => handleDestinationSelect(index, destObj)}
                   />
@@ -674,14 +706,19 @@ return (
                     </p>
                   ) : (
                     <div className="flex flex-wrap gap-1.5 py-1">
-                      {dayConfig.activities.map((act, idx) => (
+                      {dayConfig.activities.slice(0,2).map((act, idx) => (
                         <span
-                          key={idx}
+                          key={ act.temp_id || idx}
                           className="px-2.5 py-1 bg-white border border-[#E4DCCB] text-[11px] font-semibold text-[#0F2A2E]"
                         >
                           {act.activity_type_title || `Activity #${idx + 1}`}
                         </span>
-                      ))}
+                      ))} 
+                      {dayConfig.activities.length > 2 && (
+                          <span className="px-2.5 py-1 bg-[#FCE9DA] border border-[#E8772E]/25 text-[11px] font-bold text-[#B34F12]">
+                          +{dayConfig.activities.length - 2} more
+                        </span>
+                      )}
                     </div>
                   )}
                 </div>
@@ -709,7 +746,7 @@ return (
                     </p>
                   ) : (
                     <div className="flex flex-wrap gap-1.5 py-1">
-                      {dayConfig.optionalMeals.map((m, idx) => (
+                      {dayConfig.optionalMeals.slice(0,2).map((m, idx) => (
                         <span
                           key={idx}
                           className="px-2.5 py-1 bg-white border border-[#E4DCCB] text-[11px] font-semibold text-[#0F2A2E]"
@@ -717,6 +754,11 @@ return (
                           {m.meal_name || `Meal #${idx + 1}`}
                         </span>
                       ))}
+                      {dayConfig.optionalMeals.length > 2 && (
+                         <span className="px-2.5 py-1 bg-[#FCE9DA] border border-[#E8772E]/25 text-[11px] font-bold text-[#B34F12]">
+                          +{dayConfig.optionalMeals.length - 2} more
+                        </span>
+                      )}
                     </div>
                   )}
                 </div>
@@ -728,6 +770,8 @@ return (
                   isOpen={true}
                   onClose={() => setActiveActivityModalDay(null)}
                   dayIndex={dayIndex}
+                  dayId={dayConfig.id}
+                  initialActivities={dayConfig.activities}
                   onSaveActivities={(updated) => handleSaveActivities(index, updated)}
                 />
               )}
@@ -737,6 +781,8 @@ return (
                   isOpen={true}
                   onClose={() => setActiveMealModalDay(null)}
                   dayIndex={dayIndex}
+                  dayId={dayConfig.id}
+                  initialMeals={dayConfig.optionalMeals}
                   onSaveMeals={(updated) => handleSaveMeals(index, updated)}
                 />
               )}

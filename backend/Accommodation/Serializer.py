@@ -5,14 +5,8 @@ from Accommodation.models import (
  )
 
 from Clients.models import ClientRequestInformation
+from Clients.utils.residency import is_eac_country, determine_residency
 
-
-
-# class AccommodationRoomTypesSerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = AccommodationRoomType? nataka hapa kila accommodation 
-#         itakayo chaguliwa ije na room zake na price ili user akiwa anabadilisha kwenye react? 
-#         inamuonesha auto pricing na pia (accommodation ikichaguliwa inakuja na zile defaul rooms)
 
 
 
@@ -108,43 +102,63 @@ class AccommodationSerializer(serializers.ModelSerializer):
         if not client_req:
             return None
 
-        total_adults = sum(
-            traveller.number for traveller in client_req.travellers.all() if traveller.age_category == "ADULT"
-        )
 
-        total_children = sum(
-            traveller.number for traveller in client_req.travellers.all() if traveller.age_category == "CHILD"
-        ) 
+        total_adult_concession = 0.0
+        total_child_concession = 0.0
+        total_adults = 0
+        total_children = 0
 
-        country = client_req.client_requested.country or ""
-        eac_countries = [
-            "Democratic Republic of the Congo", "Tanzania", "Uganda", 
-            "South Sudan", "Somalia", "Kenya", "Rwanda", "Burundi"
-        ]
- 
 
-        is_resident = any(c.lower() in country.lower() for c in eac_countries)
 
-        rate_adult = (
-            obj.concession_fee_adult_resident if is_resident else obj.concession_fee_adult_non_resident
-        ) or 0
+        for traveller in client_req.travellers.all():
+            if traveller.age_category == "INFANT":
+                continue
 
-        rate_child = (
-            obj.concession_fee_child_resident if is_resident else obj.concession_fee_child_non_resident
-        ) or 0
+            residency = determine_residency(traveller, client_req)
 
+            is_resident_rate = residency in ("RESIDENT", "EAC_MEMBER")
+
+            rate_adult = (
+                obj.concession_fee_adult_resident if is_resident_rate
+                else obj.concession_fee_adult_non_resident
+            ) or 0
+            
+            rate_child = (
+                obj.concession_fee_child_resident if is_resident_rate
+                else obj.concession_fee_child_non_resident
+            ) or 0
+
+            number = getattr(traveller, "number", 1)
+
+            if traveller.age_category == "ADULT":
+                total_adults += number
+                total_adult_concession += float(rate_adult) * number
+            elif traveller.age_category == "CHILD":
+                total_children += number
+                total_child_concession += float(rate_child) * number
+
+
+        first_traveller = next((t for t in client_req.travellers.all() if t.age_category != "INFANT"), None)
+        sample_residency = determine_residency(first_traveller, client_req) if first_traveller else "NON_RESIDENT"
+        sample_is_resident = sample_residency in ("RESIDENT", "EAC_MEMBER")
 
         return {
-            "is_inside_park": True,
-            "rate_per_adult": float(rate_adult),
-            "rate_per_child": float(rate_child),
+                "is_inside_park": True,
+                "rate_per_adult": float(
+                    obj.concession_fee_adult_resident if sample_is_resident
+                    else obj.concession_fee_adult_non_resident
+                ) or 0,
+                "rate_per_child": float(
+                    obj.concession_fee_child_resident if sample_is_resident
+                    else obj.concession_fee_child_non_resident
+                ) or 0,
+                "total_adults": total_adults,
+                "total_children": total_children,
+                "total_adult_concession": float(total_adult_concession),
+                "total_child_concession": float(total_child_concession),
+            }
 
-            "total_adults":total_adults,
-            "total_children":total_children,
 
-            "total_adult_concession": float(total_adults * rate_adult),
-            "total_child_concession": float(total_children * rate_child),
-        }
 
 
 

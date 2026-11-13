@@ -10,7 +10,7 @@ import {
   Banknote,
   ArrowRight,
 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import { Ornament } from "./PdfShare/ShareSection";
 import PdfBookPage from "./PdfShare/SmartSplit";

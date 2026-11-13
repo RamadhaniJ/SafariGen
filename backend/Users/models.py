@@ -158,7 +158,7 @@ class CustomUserModel(AbstractBaseUser, PermissionsMixin):
 class UserEmailOTP(models.Model):
      id = models.UUIDField(default=uuid7, primary_key=True, editable=False)
      user = models.ForeignKey(CustomUserModel, related_name="email_otps", on_delete=models.CASCADE, blank=True, null=True)
-     
+      
      otp_code = models.CharField(max_length=20)
      attempts = models.PositiveSmallIntegerField(default=0) 
      MAX_ATTEMPTS = 5

@@ -1,22 +1,22 @@
-# Communication/views.py
 import logging
 from django.conf import settings
 from django.utils import timezone
 from django.core.mail import EmailMultiAlternatives
+
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status, generics
-from rest_framework.exceptions import PermissionDenied
+from rest_framework.exceptions import PermissionDenied, ValidationError 
  
 from Users.authentication import CustomJwtCookiesAuth
 from Users.view_auth import IsStaff, IsStaffOrManager
-from Communication.serializers import ItineraryEmailSendSerializer, ListCommunicationChannelSerializer, EmailTemplateListSerializer
+from Communication.serializers import  ListCommunicationChannelSerializer, ListEmailTemplateSerializer
 from Communication.models import CommunicationLog, CommunicationChannel, EmailTemplate
 from Itinerary.models import ItineraryVersion
 from ActivityLog.models import ActivitiesLogs
 
-from django.template import Template, Context
+from django.template import Template, Context, TemplateSyntaxError
 from django.db import transaction
 
 logger = logging.getLogger(__name__)
@@ -30,15 +30,16 @@ class ListCommunicationChannelView(generics.ListAPIView):
     permission_classes = [IsAuthenticated, IsStaffOrManager]
     serializer_class = ListCommunicationChannelSerializer
 
-    queryset = CommunicationChannel.objects.filter(is_active=True)
+    def get_queryset(self):
+        return  CommunicationChannel.objects.filter(is_active=True)
 
 
 
 
 class ListEmailTemplatesView(generics.ListAPIView):
     authentication_classes = [CustomJwtCookiesAuth]
-    permission_classes = [IsAuthenticated]
-    serializer_class = EmailTemplateListSerializer
+    permission_classes = [IsAuthenticated, IsStaffOrManager]
+    serializer_class = ListEmailTemplateSerializer
 
 
     def get_queryset(self):
@@ -48,18 +49,63 @@ class ListEmailTemplatesView(generics.ListAPIView):
 
 
 
-class SendItineraryQuoteEmailView(APIView):
+
+
+
+
+class SendItineraryQuoteViaEmailView(APIView):
     authentication_classes = [CustomJwtCookiesAuth]
     permission_classes = [IsAuthenticated, IsStaffOrManager]
 
+
+
     def post(self, request, client_id, version_id):
-        serializer = ItineraryEmailSendSerializer(data=request.data, context={'request': request})
-        serializer.is_valid(raise_exception=True)
+        channel_id = request.data.get("channel_id")
+        template_id = request.data.get("template_id")
+
+        if not channel_id  or not template_id :
+             raise ValidationError({"detail":"Channel Id or Template Id is required"})
         
-        version = serializer.validated_data['version_id']
-        channel = serializer.validated_data['channel_id']
-        email_template = serializer.validated_data['template_id']
+        try:
+            channel = CommunicationChannel.objects.get(
+                id = channel_id,
+                is_active = True
+            )
+        except (CommunicationChannel.DoesNotExist , ValidationError, ValueError):
+            raise ValidationError({"channel":"Channel does not exists"})
+
+
+        try:
+            template = EmailTemplate.objects.get(
+                id = template_id,
+                is_active = True
+            )
+        except (EmailTemplate.DoesNotExist, ValidationError, ValueError):
+            raise ValidationError({"template":"Template selected does not exists"})
         
+        try:
+            version = ItineraryVersion.objects.select_related(
+                'client_request__client_requested',
+                'created_by'
+            ).get(
+                id = version_id
+            )
+        except ItineraryVersion.DoesNotExist:
+            raise ValidationError({"version":"Itinerary version selected does not exists"})
+
+        subject = request.data.get("subject")
+        body_html = request.data.get("body_html")
+
+
+        if channel and (channel.name or "").upper() != "EMAIL":
+            raise ValidationError({"channel":"We a sorry, the Currently supported channel is Email."})
+
+        if subject is None or body_html is None:
+            raise ValidationError({"detail":"Subject or message body is missing"})
+
+
+
+
 
         client_info = version.client_request.client_requested
         is_owner = client_info.company.owner == request.user
@@ -74,14 +120,8 @@ class SendItineraryQuoteEmailView(APIView):
         
         company_name = client_info.company.name
         sender_name = version.created_by.full_name if version.created_by else "Our Team"
-        
-        subject = serializer.validated_data.get('subject', '').strip()
-        body_html = serializer.validated_data.get('body_html', '').strip()
-        
-        if not body_html or not subject:
-            return Response({"error": "Email body and subject are required!"}, status=status.HTTP_400_BAD_REQUEST)
-        
 
+        
         salutation = client_info.salutation or ""
         first_name = client_info.first_name or ""
         last_name = client_info.last_name or ""
@@ -90,6 +130,12 @@ class SendItineraryQuoteEmailView(APIView):
         frontend_preview_link = request.data.get('preview_link', '').strip()
         fallback_preview_link = f"{getattr(settings, 'FRONTEND_URL', '')}/preview/safari/itinerary/{client_id}/{version_id}"
         final_preview_link = frontend_preview_link or fallback_preview_link
+
+        def _format_money(value):
+            try:
+                return f"{float(value):,.2f}"
+            except (TypeError, ValueError):
+                return "0.00"
         
         context_data = {
             'client_name': clean_client_name,
@@ -98,12 +144,19 @@ class SendItineraryQuoteEmailView(APIView):
             'company_name': company_name,
             'sender_name': sender_name,
             'preview_link': final_preview_link,
-            'grand_total': str(version.version_pricing_snapshot.grand_total) if version.version_pricing_snapshot else "0.00",
-        }
+            'grand_total': _format_money(version.version_pricing_snapshot.grand_total) if version.version_pricing_snapshot else "0.00",
+            'price_per_person': _format_money(version.version_pricing_snapshot.price_per_person) if version.version_pricing_snapshot else "0.00",
+        } 
         
         context = Context(context_data)
-        final_subject = Template(subject).render(context)
-        final_body_html = Template(body_html).render(context)
+        try:
+            final_subject = Template(subject).render(context)
+            final_body_html = Template(body_html).render(context)
+        except TemplateSyntaxError as e:
+            logger.warning(f"Template syntax error, using raw content: {e}")
+
+            final_subject = subject
+            final_body_html = body_html
         
         text_fallback = f"Dear {context_data['client_name']},\n\nPlease view your personalized itinerary online at:\n{context_data['preview_link']}\n\nWarm regards,\n{sender_name}\n{company_name}"
         
@@ -111,9 +164,10 @@ class SendItineraryQuoteEmailView(APIView):
         log = CommunicationLog.objects.create(
             version=version,
             channel=channel,
+            template = template,
             recipient=client_info.email,
             sent_by=request.user,
-            status="PENDING"
+            status="QUEUED"
         )
         
 

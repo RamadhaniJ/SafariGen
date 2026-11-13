@@ -1,5 +1,5 @@
  import { useEffect, useState, useContext, useMemo } from 'react';
-import { toast } from 'sonner';
+import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
 import {
   Edit2, Trash2, Send, Eye, Calendar, MapPin, MoveLeft, MoreHorizontal,
@@ -664,6 +664,10 @@ export default function ListItinerariesWithVersionGlobal() {
           client_name={emailQuoteData.version.client_name}
           tour_title={emailQuoteData.version.snapshot_tour_title}
           version_number={emailQuoteData.version.version_number}
+          company_name = {emailQuoteData.version.company_name}
+          tour_code={emailQuoteData.version.tour_code}         // ← ongeza
+          grand_total={emailQuoteData.version.grand_total}      
+          price_per_person={emailQuoteData.version.price_per_person}      
           onClose={() => {
             setShowSendQuoteModel(false);
             setEmailQuoteData(null);

@@ -1,6 +1,6 @@
  import { Eye, EyeOff, Lock, ShieldCheck, Check, X, Loader2 } from "lucide-react";
  import { useState, useMemo } from "react";
- import { toast } from "sonner";
+ import { toast } from "react-toastify";
  import api from "../../Apis/api";
  
  // ─── Password rules ──────────────────────────────────────────────

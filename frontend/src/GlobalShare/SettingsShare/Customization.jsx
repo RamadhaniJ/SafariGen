@@ -11,7 +11,7 @@ import {
   PenTool,
   Eye,
 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "react-toastify";
 
 /* ─────────────────────────────────────────────────────────────
    REPLACE WITH REAL DATA FROM BACKEND LATER
