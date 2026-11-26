@@ -15,6 +15,8 @@ from datetime import timedelta
 import os
 from dotenv import load_dotenv
 
+from backend.env import env_bool, env_list
+
 load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -34,11 +36,17 @@ MAPBOX_STYLE = os.getenv("MAPBOX_STYLE")
 
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+# Off unless the environment says DEBUG=True (set that only on your own computer).
+DEBUG = env_bool("DEBUG", default=False)
 
 AUTH_USER_MODEL = "Users.CustomUserModel"
 
-ALLOWED_HOSTS = ['*']
+# Domain names this backend answers to, comma-separated in ALLOWED_HOSTS.
+# The default keeps the live site and local development working if it is unset.
+ALLOWED_HOSTS = env_list(
+    "ALLOWED_HOSTS",
+    default=["app.safarigen.io", "localhost", "127.0.0.1", "[::1]"],
+)
 
 
 # Application definition

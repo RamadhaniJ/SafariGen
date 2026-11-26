@@ -20,11 +20,12 @@ automatically, send quotes and generate PDFs.
 
 ## Known issues (from the code review, in priority order)
 
-1. `DEBUG = True` and `ALLOWED_HOSTS = ['*']` are hard-coded in
-   `backend/backend/settings.py`, so production shows Django debug pages.
-   They should come from environment variables, with safe defaults (DEBUG off).
-   Note: `backend/urls.py` only serves `/media/` while DEBUG is on, so media
-   needs another way to be served in production before DEBUG goes off.
+1. ~~`DEBUG = True` and `ALLOWED_HOSTS = ['*']` hard-coded in settings.~~
+   Fixed on branch `fix/debug-allowed-hosts-from-env`: both are now read from
+   the environment (`backend/backend/env.py`). DEBUG defaults to off.
+   ALLOWED_HOSTS defaults to `app.safarigen.io, localhost, 127.0.0.1, [::1]`.
+   In production nginx serves `/media/` and `/static/` itself, so DEBUG off
+   doesn't affect images or admin CSS.
 2. There were no automated tests. Pricing tests now live in `backend/Itinerary/tests.py`.
 3. Pricing is calculated in several places that must "match": the backend
    engine (`Itinerary/pricing.py`), the frontend hook
@@ -188,7 +189,8 @@ cp .env.example .env        # then set SECRET_KEY (see below)
 Generate a secret key:
 `.venv/bin/python -c "from django.core.management.utils import get_random_secret_key as g; print(g())"`
 
-`.env` variables: `SECRET_KEY` (required), `MAPBOX_ACCESS_TOKEN`,
+`.env` variables: `SECRET_KEY` (required), `DEBUG` (set `True` locally;
+off when unset), `ALLOWED_HOSTS` (comma-separated, optional), `MAPBOX_ACCESS_TOKEN`,
 `MAPBOX_STYLE`, `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD`, `REACT_PRINT_URL`
 (see the note above). Seed commands exist, e.g. `manage.py seed_destinations`,
 `seed_accommodations`, `seed_activities`, `seed_meals`. PDF generation needs
@@ -210,8 +212,20 @@ CORS and CSRF in settings allow only `http://localhost:5173`.
 
 ```bash
 cd backend
-.venv/bin/python manage.py test Itinerary.tests
+.venv/bin/python manage.py test backend Itinerary.tests
 ```
+
+### Production (what the server needs)
+
+Production is nginx (Ubuntu) in front of Django at `app.safarigen.io`. nginx
+serves `/static/` and `/media/` directly. On the server's environment (or its
+`backend/.env`):
+- `SECRET_KEY`: required, secret, different from local.
+- `DEBUG`: leave unset or set `False`. Never `True`.
+- `ALLOWED_HOSTS`: optional. Set it if the site gets another domain
+  (e.g. `app.safarigen.io,www.safarigen.io`). A request for a domain not on
+  the list gets "400 Bad Request".
+- `MAPBOX_ACCESS_TOKEN`, `MAPBOX_STYLE`, `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD`.
 
 `Itinerary/tests.py` pins down today's pricing results, including the known-bad
 fallbacks (marked `CURRENT BEHAVIOUR`). When pricing changes on purpose, update
