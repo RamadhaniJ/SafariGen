@@ -482,10 +482,15 @@ class DayByDayPreviewSerializer(serializers.ModelSerializer):
             else:
                 featured_url = obj.destination.featured_img.url
 
+        lat, lng = obj.destination.location_latitude, obj.destination.location_longitude
         return {
             "name": obj.destination.name,
             "location":obj.destination.location,
-            "featured_image": featured_url
+            "featured_image": featured_url,
+            # Used by the animated route map on the guest page.
+            "destination_type": obj.destination.destination_type,
+            "latitude": float(lat) if lat is not None else None,
+            "longitude": float(lng) if lng is not None else None,
         }
 
 

@@ -233,3 +233,26 @@ class DownloadEndpointTests(PdfCacheTestBase):
             warm.reset_mock()
             Client().get(preview, HTTP_USER_AGENT="Mozilla/5.0 HeadlessChrome/151.0")
             warm.assert_not_called()
+
+
+class PreviewRouteMapDataTests(PdfCacheTestBase):
+    """The guest page's animated route map needs each destination's coordinates."""
+
+    def test_preview_includes_destination_coordinates_and_type(self):
+        self.dest.location_latitude = "-2.333333"
+        self.dest.location_longitude = "34.833333"
+        self.dest.save()
+        url = f"/api/itinerary/preview/client/safari/data/{self.req.id}/{self.version.id}/"
+        with patch("Itinerary.views.schedule_warm"):
+            data = Client().get(url).json()
+        info = data["itinerary"]["days"][0]["destination_info"]
+        self.assertEqual(info["destination_type"], "Park")
+        self.assertAlmostEqual(info["latitude"], -2.333333)
+        self.assertAlmostEqual(info["longitude"], 34.833333)
+
+    def test_missing_coordinates_are_null(self):
+        url = f"/api/itinerary/preview/client/safari/data/{self.req.id}/{self.version.id}/"
+        with patch("Itinerary.views.schedule_warm"):
+            info = Client().get(url).json()["itinerary"]["days"][0]["destination_info"]
+        self.assertIsNone(info["latitude"])
+        self.assertIsNone(info["longitude"])

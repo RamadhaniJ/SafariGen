@@ -11,11 +11,16 @@ import { AuthenticationContext } from "../../../Apis/AuthProvider";
 import api from "../../../Apis/api";
 import GlobalLoader from "../../../Component/Loader";
 
-import DigitalPageHeaderSection from "../DigitalSections/Header1";
-import DigitalHeroSection from "../DigitalSections/HeroSection2";
-import DigitalMapSection from "../DigitalSections/MapSection3";
-import DayByDayDigitalSection from "../DigitalSections/DayByDaySection4";
 import FooterDigitalSection from "../DigitalSections/FooterSection5";
+import PriceBreakdownSideBarSubSection from "../SubSections/SideBar-Pricing";
+
+// Cinematic guest page (dark, full-screen photos, scroll animations)
+import { C } from "../Cinematic/cinematic";
+import CinematicHero from "../Cinematic/CinematicHero";
+import DayNavigator from "../Cinematic/DayNavigator";
+import RouteMap from "../Cinematic/RouteMap";
+import SummaryTable from "../Cinematic/SummaryTable";
+import DaySection from "../Cinematic/DaySection";
 
 import PricingBreakdownPage from "../../Pricing/PricingBreakD";
   
@@ -25,6 +30,7 @@ export default function PreviewDigitalPageItineraryMain() {
   const [loading, setLoading] = useState(true);
 
   const [isPricingOpen, setIsPricingOpen] = useState(false);
+  const [isGuestPriceOpen, setIsGuestPriceOpen] = useState(false);
   
   const navigate = useNavigate();
   const { userRole, isAuthenticated } = useContext(AuthenticationContext);
@@ -77,18 +83,45 @@ export default function PreviewDigitalPageItineraryMain() {
   );
 
   const { hero_image, itinerary } = safariData;
-  const { client_info, days, map_image_url } = itinerary;
+  const { client_info, days = [], map_image_url } = itinerary;
+  const totalNights = days.reduce((n, d) => n + (d.accommodation_info ? (d.nights_number || 1) : 0), 0);
+  const heroPhoto =
+    hero_image ||
+    days.map((d) => d.destination_info?.featured_image).find(Boolean) ||
+    null;
+
+  const handleConfirm = () =>
+    toast.info("Booking feature opening soon! Contact host to confirm instantly.");
 
   return (
-    <div className="relative bg-stone-700 min-h-screen">
-      
-      {/* --- MAIN ITINERARY CONTENT --- */}
-      <DigitalPageHeaderSection safariData={safariData} />
-      <DigitalHeroSection safariData={safariData} />
+    <div className="relative min-h-screen" style={{ background: C.ink }}>
 
-      <DigitalMapSection safariData={safariData} />
-      <DayByDayDigitalSection safariData={safariData} />
-      <FooterDigitalSection safariData={safariData} client_id={client_id} version_id={version_id} />
+      {/* --- MAIN ITINERARY CONTENT --- */}
+      <DayNavigator
+        clientInfo={client_info}
+        days={days}
+        grandTotal={map_image_url?.grand_total}
+        onOpenPrice={() => setIsGuestPriceOpen(true)}
+        onConfirm={handleConfirm}
+      />
+      <CinematicHero
+        clientInfo={client_info}
+        heroImage={heroPhoto}
+        nights={totalNights}
+        onExplore={() => document.getElementById("route")?.scrollIntoView({ behavior: "smooth" })}
+      />
+      <RouteMap days={days} clientInfo={client_info} mapImage={map_image_url?.map_image} />
+      <SummaryTable days={days} clientInfo={client_info} />
+      {days.map((day, i) => (
+        <DaySection key={day.id} day={day} index={i} total={days.length} />
+      ))}
+      <div id="your-quote">
+        <FooterDigitalSection safariData={safariData} client_id={client_id} version_id={version_id} />
+      </div>
+
+      {isGuestPriceOpen && (
+        <PriceBreakdownSideBarSubSection safariData={safariData} onClose={() => setIsGuestPriceOpen(false)} />
+      )}
 
       
 

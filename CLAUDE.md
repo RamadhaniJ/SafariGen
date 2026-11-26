@@ -61,6 +61,11 @@ Other things noticed while reading (not yet fixed):
   assumes one).
 - The pricing PDF (`pricing_pdf.py`) is rendered with the caller's cookies
   and its endpoint has no permission check. Don't cache it until that's sorted.
+- `FooterSection5.jsx` (guest page footer) hard-codes social links
+  (acesafarisltd) and an "Arusha, Sekei Rd." address for every company, and
+  shows a broken image when the company has no logo.
+- Logging out doesn't clear the sign-in cookies (`delete_cookie` without
+  `samesite="None"`/`secure`), so a stale session keeps showing "Session Ended".
 - Rendering a PDF is slow and uneven (17–108 s locally, 8–9 MB files), mostly
   `page.pdf()`. Large images and effects on the print page are likely causes.
 
@@ -88,6 +93,13 @@ frontend/src/
   StaffPages/         Staff dashboard and settings
   GlobalShare/        Shared screens: clients, itinerary create/edit, price breakdown
   SafariPreview/      Digital (web) preview, PDF pages, pricing PDF
+    DigitalPage/Cinematic/  The guest web page ("digital file"): dark cinematic
+                        design with framer-motion scroll animations (hero,
+                        sticky day navigator, animated route map, summary
+                        table, day sections with pinned photos). The old
+                        DigitalSections/Header1, HeroSection2, MapSection3,
+                        DayByDaySection4 and SubSections/Highlights, Navigations
+                        are no longer used (kept until the new page is approved).
 ```
 
 API routes (`backend/backend/urls.py`): `/admin/`, `/api/account/`,
