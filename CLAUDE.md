@@ -218,3 +218,8 @@ cd backend
 `Itinerary/tests.py` pins down today's pricing results, including the known-bad
 fallbacks (marked `CURRENT BEHAVIOUR`). When pricing changes on purpose, update
 the affected test in the same change and say why. Tests mock the Mapbox call.
+
+GitHub Actions (`.github/workflows/tests.yml`) runs on every pull request and every push
+to `main`: Django check, missing-migration check, `manage.py test backend
+Itinerary.tests`, and a frontend `npm ci && npm run build`. When adding test
+modules, add them to that command until the stray test files are removed.
