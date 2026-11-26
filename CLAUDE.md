@@ -57,8 +57,6 @@ Other things noticed while reading (not yet fixed):
 - `is_eac_country` matches by substring, so "Sudan" and "Congo" count as EAC
   members (pinned in tests as current behaviour).
 - `FRONTEND_URL`, `DEFAULT_FROM_EMAIL`, CORS and CSRF origins are hard-coded in settings.
-- `frontend/package-lock.json` is out of sync with `package.json` on macOS, so
-  `npm ci` fails. Use `npm install --no-package-lock` locally until it is regenerated.
 
 ## Repository layout
 
@@ -204,7 +202,7 @@ Ghostscript (`gs`).
 ```bash
 cd frontend
 cp .env.example .env        # VITE_API_URL=http://localhost:8000/api/
-npm install --no-package-lock   # see lock-file note above
+npm ci
 npm run dev                 # http://localhost:5173
 ```
 
