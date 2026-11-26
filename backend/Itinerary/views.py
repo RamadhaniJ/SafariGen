@@ -16,6 +16,7 @@ from Users.authentication import CustomJwtCookiesAuth
 from Users.view_auth import IsStaffOrManager
 from Clients.models import ClientRequestInformation
 from Itinerary.models import MainDayByDayItinerary , ItineraryPricingSnapshot, ItineraryVersion
+from Itinerary.pdf_cache import schedule_warm
 from Configuration.models import HeroSectionImages
 from Communication.models import CommunicationLog
 from ActivityLog.models import ActivitiesLogs
@@ -208,6 +209,11 @@ class PreviewClientSafariItineraryView(APIView):
                 {"detail": "Itinerary Version Not Found for this client"}, 
                 status=status.HTTP_404_NOT_FOUND
             )
+
+        # Pre-build the PDF while the guest reads the page, so "Download quote"
+        # is instant. Skipped for the PDF renderer's own visit to this page.
+        if "HeadlessChrome" not in request.META.get("HTTP_USER_AGENT", ""):
+            schedule_warm(version.id)
 
         context = {
             "request": request,

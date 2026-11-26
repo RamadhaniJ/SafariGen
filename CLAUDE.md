@@ -56,6 +56,13 @@ Other things noticed while reading (not yet fixed):
 - `is_eac_country` matches by substring, so "Sudan" and "Congo" count as EAC
   members (pinned in tests as current behaviour).
 - `FRONTEND_URL`, `DEFAULT_FROM_EMAIL`, CORS and CSRF origins are hard-coded in settings.
+- The guest preview API (`PreviewClientSafariItineraryView`) crashes with a 500
+  when the client has no company (`get_company_logo` in `Itinerary/Serializer.py`
+  assumes one).
+- The pricing PDF (`pricing_pdf.py`) is rendered with the caller's cookies
+  and its endpoint has no permission check. Don't cache it until that's sorted.
+- Rendering a PDF is slow and uneven (17–108 s locally, 8–9 MB files), mostly
+  `page.pdf()`. Large images and effects on the print page are likely causes.
 
 ## Repository layout
 
@@ -195,6 +202,19 @@ Generate a secret key:
 Playwright's browser (`.venv/bin/playwright install chromium`) and optionally
 Ghostscript (`gs`).
 
+### Guest itinerary PDF ("Download quote")
+
+`Itinerary/pdf_cache.py` saves each rendered PDF in `backend/pdf_cache/`
+(git-ignored) and serves that copy until something shown in it changes. That
+covers the version, its prices, the client, the request, the company, the
+destinations and lodges used, and their photos and descriptions. A background
+thread pre-builds the PDF after a quote is created or edited and whenever the
+guest preview is opened, so the click is usually instant. A lock file
+prevents duplicate renders, and a download during a render waits for it.
+Settings (all optional): `PDF_CACHE_DIR`, `PDF_CACHE_MAX_AGE_HOURS` (168),
+`PDF_CACHE_VERSION` (bump after changing the PDF design so all copies
+rebuild), `PDF_PREBUILD_ENABLED` (true), `PDF_MAX_PARALLEL_RENDERS` (2).
+
 ### Frontend
 
 ```bash
@@ -210,7 +230,7 @@ CORS and CSRF in settings allow only `http://localhost:5173`.
 
 ```bash
 cd backend
-.venv/bin/python manage.py test Itinerary.tests
+.venv/bin/python manage.py test backend Itinerary.tests Itinerary.tests_pdf_cache
 ```
 
 `Itinerary/tests.py` pins down today's pricing results, including the known-bad
@@ -219,5 +239,5 @@ the affected test in the same change and say why. Tests mock the Mapbox call.
 
 GitHub Actions (`.github/workflows/tests.yml`) runs on every pull request and every push
 to `main`: Django check, missing-migration check, `manage.py test backend
-Itinerary.tests`, and a frontend `npm ci && npm run build`. When adding test
+Itinerary.tests Itinerary.tests_pdf_cache`, and a frontend `npm ci && npm run build`. When adding test
 modules, add them to that command until the stray test files are removed.
