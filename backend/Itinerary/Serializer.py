@@ -20,6 +20,7 @@ from Accommodation.models import Accommodation, AccommodationRoomType
 from ActivityLog.models import ActivitiesLogs
 from Clients.models import ClientRequestInformation, Traveller
 from Itinerary.pricing import calculate_and_save_pricing_snapshot
+from Itinerary.pdf_cache import schedule_warm
 
 
 
@@ -278,6 +279,7 @@ class BulkItineraryCreateSerializer(serializers.Serializer):
                 commission_percentage=commission_pct,
                 current_user=current_user
             )
+            schedule_warm(new_version.id)  # pre-build the guest PDF once saved
 
             if client.client_requested.created_by != current_user:
                 ActivitiesLogs.objects.create(

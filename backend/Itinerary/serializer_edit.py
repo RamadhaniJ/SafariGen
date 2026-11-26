@@ -15,6 +15,7 @@ import math
 import uuid
 from Destinations.models import Destination
 from Itinerary.pricing import calculate_and_save_pricing_snapshot
+from Itinerary.pdf_cache import schedule_warm
 
  
 
@@ -541,6 +542,7 @@ class EditItinerarySerializer(serializers.Serializer):
                 commission_percentage=commission_pct,
                 current_user=current_user
             )
+            schedule_warm(new_version.id)  # pre-build the guest PDF once saved
             
             # Update grand total kwenye ClientRequestInformation (kwa summary)
             client_request.safari_grand_total = snapshot.grand_total

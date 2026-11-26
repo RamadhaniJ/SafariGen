@@ -89,14 +89,27 @@ export default function FooterDigitalSection({
     }
 
     setDownloading(true);
- 
-    let step = 0;
-    const toastId = toast.loading(PDF_STEPS[0]);
 
-    intervalRef.current = setInterval(() => {
-      step = Math.min(step + 1, PDF_STEPS.length - 1);
-      toast.loading(PDF_STEPS[step], { id: toastId });
-    }, 2500);
+    // The PDF is usually already prepared and arrives almost instantly, so only
+    // show the progress message if the download takes noticeably long.
+    let step = 0;
+    let toastId = null;
+    const showProgressTimer = setTimeout(() => {
+      toastId = toast.loading(PDF_STEPS[0]);
+      intervalRef.current = setInterval(() => {
+        step = Math.min(step + 1, PDF_STEPS.length - 1);
+        toast.update(toastId, { render: PDF_STEPS[step] });
+      }, 2500);
+    }, 600);
+
+    // react-toastify: turn the loading message into the final one (or show a new one).
+    const finishToast = (type, message) => {
+      if (toastId !== null) {
+        toast.update(toastId, { render: message, type, isLoading: false, autoClose: 4000 });
+      } else {
+        toast[type](message);
+      }
+    };
 
     try {
       const response = await api.get(`itinerary/view/pdf/${client_id}/${version_id}`, {
@@ -108,31 +121,33 @@ export default function FooterDigitalSection({
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download =
-        `${client_info?.tour_title}.pdf` ||
-        `Safari Proposal-${client_info?.tour_code}`;
+      link.download = client_info?.tour_title
+        ? `${client_info.tour_title}.pdf`
+        : `Safari Proposal-${client_info?.tour_code || "Quote"}.pdf`;
 
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
 
+      clearTimeout(showProgressTimer);
       clearInterval(intervalRef.current);
-      toast.success("Download success! 🔥", { id: toastId });
+      finishToast("success", "Download success! 🔥");
     } catch (error) {
+      clearTimeout(showProgressTimer);
       clearInterval(intervalRef.current);
-      const errorMsg = error?.response?.data;
-      if (errorMsg?.detail){
-        toast.error(errorMsg.detail)
-      }else if (errorMsg && typeof errorMsg === "object"){
-        Object.entries(errorMsg).forEach(([val, msg])=>{
-          const text = Array.isArray(msg) ? msg.join(", ") : String(msg);
-          toast.error(`${val} : ${text}`)
-        })
-      }else{
-        toast.error("Failed to generate PDF. Try again later.", { id: toastId });
-    }
+      // With responseType "blob", error bodies arrive as a Blob: read the JSON inside.
+      let errorMsg = error?.response?.data;
+      if (errorMsg instanceof Blob) {
+        try { errorMsg = JSON.parse(await errorMsg.text()); } catch { errorMsg = null; }
+      }
+      if (errorMsg?.detail || errorMsg?.error) {
+        finishToast("error", errorMsg.detail || errorMsg.error);
+      } else {
+        finishToast("error", "Failed to generate PDF. Try again later.");
+      }
     } finally {
+      clearTimeout(showProgressTimer);
       clearInterval(intervalRef.current);
       setDownloading(false);
     }
