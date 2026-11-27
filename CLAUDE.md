@@ -264,6 +264,11 @@ Admin classes must inherit `unfold.admin.ModelAdmin` / `TabularInline` / `Stacke
 New models also need an entry in `UNFOLD["SIDEBAR"]["navigation"]` to appear in the menu.
 `backend/backend/tests_admin.py` opens every admin page, so a broken screen fails CI.
 
+Lodge prices are typed in a grid: Admin → Lodges & hotels → a lodge → "Open room prices grid"
+(`/admin/Accommodation/accommodation/<id>/prices/`, `Accommodation/price_grid.py`). Rows are
+room types × meal plans, columns are the lodge's seasons plus "All year"; it lists gaps (seasons
+without a price, dates no season covers) that would stop quotes from being saved.
+
 Deploying it: `pip install -r requirements.txt`, `python manage.py migrate`, then
 `python manage.py collectstatic --noinput`. nginx must serve `/static/` from `STATIC_ROOT`
 (default `backend/staticfiles/`), otherwise the admin loads without its styling.
@@ -272,7 +277,7 @@ Deploying it: `pip install -r requirements.txt`, `python manage.py migrate`, the
 
 ```bash
 cd backend
-.venv/bin/python manage.py test backend Users Itinerary.tests Itinerary.tests_pdf_cache Itinerary.tests_price_preview
+.venv/bin/python manage.py test backend Users Accommodation Itinerary.tests Itinerary.tests_pdf_cache Itinerary.tests_price_preview
 ```
 
 `Itinerary/tests.py` pins down today's pricing results, including the known-bad
@@ -281,5 +286,5 @@ the affected test in the same change and say why. Tests mock the Mapbox call.
 
 GitHub Actions (`.github/workflows/tests.yml`) runs on every pull request and every push
 to `main`: Django check, missing-migration check, `manage.py test backend
-Users Itinerary.tests Itinerary.tests_pdf_cache Itinerary.tests_price_preview`, and a frontend `npm ci && npm run build`. When adding test
+Users Accommodation Itinerary.tests Itinerary.tests_pdf_cache Itinerary.tests_price_preview`, and a frontend `npm ci && npm run build`. When adding test
 modules, add them to that command until the stray test files are removed.
