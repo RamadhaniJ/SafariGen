@@ -74,13 +74,17 @@ class AdminManagerProfile(ModelAdmin):
 
 @admin.register(Company)
 class AdminManagerCompany(ModelAdmin):
-    list_display = ["name", "owner", "country", "status_label", "guest_details", "created_at"]
+    list_display = ["name", "owner", "country", "status_label", "vehicle_price", "guest_details", "created_at"]
     list_filter = ["status", "country"]
     search_fields = ["name", "email", "owner__email"]
     list_select_related = ["owner"]
     actions = ["mark_verified", "mark_rejected"]
     fieldsets = [
         (None, {"fields": ["owner", "name", "status", "logo", "about"]}),
+        ("Pricing", {"fields": ["vehicle_rate_per_day"],
+                     "description": "Used for this company's quotes. Leave empty to use the SafariGen default "
+                                    "(Settings → Default vehicle price). Changing it re-prices the company's "
+                                    "open quotes straight away; accepted, rejected and archived quotes keep their price."}),
         ("Contact (shown to guests)", {"fields": ["email", "phone_number", "whatsapp_number", "address", "country", "website"]}),
         ("Social media (shown to guests)", {"fields": ["facebook_url", "instagram_url", "tiktok_url", "youtube_url", "twitter_url", "threads_url"]}),
         ("Verification documents", {"fields": ["certificate_of_incorporation", "tax_id_certificate", "tax_id_number"]}),
@@ -90,10 +94,25 @@ class AdminManagerCompany(ModelAdmin):
     def status_label(self, obj):
         return obj.get_status_display()
 
+    @display(description="Vehicle / day")
+    def vehicle_price(self, obj):
+        if obj.vehicle_rate_per_day is not None:
+            return f"${obj.vehicle_rate_per_day:,.0f}"
+        return "Default"
+
     @display(description="Guest details")
     def guest_details(self, obj):
         filled = sum(bool(getattr(obj, f)) for f in ["address", "whatsapp_number", "website"]) + len(obj.social_links())
         return f"{filled} of 9 filled"
+
+    def save_model(self, request, obj, form, change):
+        super().save_model(request, obj, form, change)
+        repriced = getattr(obj, "_repriced", [])
+        if repriced:
+            lines = [f"{v.client_request.tour_code}: ${old:,.2f} → ${new:,.2f}" if old is not None
+                     else f"{v.client_request.tour_code}: ${new:,.2f}" for v, old, new in repriced]
+            self.message_user(request, f"Vehicle price changed — {len(repriced)} open quote(s) re-priced: "
+                                       + "; ".join(lines), messages.SUCCESS)
 
     @action(description="Mark selected companies as Verified")
     def mark_verified(self, request, queryset):

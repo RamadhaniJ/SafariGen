@@ -318,7 +318,7 @@ UNFOLD = {
                 "title": "Settings",
                 "separator": True,
                 "items": [
-                    _admin_link("Vehicle & transit prices", "directions_car", "Configuration", "configurationdata"),
+                    _admin_link("Default vehicle price", "directions_car", "Configuration", "configurationdata"),
                     _admin_link("Quote cover photos", "photo_library", "Configuration", "herosectionimages"),
                     _admin_link("Email templates", "mail", "Communication", "emailtemplate"),
                 ],

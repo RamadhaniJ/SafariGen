@@ -65,11 +65,24 @@ class RegistrationSerializer(serializers.ModelSerializer):
 #+=====================================COMPANIES ==============================
 
 class CompanyOnboardingSerializer(serializers.ModelSerializer):
+       repriced_quotes = serializers.SerializerMethodField()
+
+       def get_repriced_quotes(self, obj):
+              """Open quotes re-priced by this save (vehicle price changed)."""
+              return [
+                     {"tour_code": v.client_request.tour_code,
+                      "old_total": str(old) if old is not None else None, "new_total": str(new)}
+                     for v, old, new in getattr(obj, "_repriced", [])
+              ]
+
        class Meta:
               model  = Company  
               fields = (
                      "id","name","email","phone_number",
                      "logo","website","country","about",
+
+                     # pricing used for this company's quotes
+                     "vehicle_rate_per_day",
 
                      # shown to guests on quotes and PDFs
                      "address","whatsapp_number",
@@ -79,7 +92,8 @@ class CompanyOnboardingSerializer(serializers.ModelSerializer):
                      "certificate_of_incorporation","tax_id_certificate","tax_id_number",
 
  
-                     "status","created_at"
+                     "status","created_at",
+                     "repriced_quotes",
               )
 
               read_only_fields = ("created_at","status", "id")
@@ -102,6 +116,13 @@ class CompanyOnboardingSerializer(serializers.ModelSerializer):
                                    value = f"https://{value}"
                             data[field] = value
               return super().to_internal_value(data)
+
+       def validate_vehicle_rate_per_day(self, value):
+              if value is not None and value < 0:
+                     raise serializers.ValidationError("Vehicle price can't be negative.")
+              if value is not None and value > 10000:
+                     raise serializers.ValidationError("That looks too high for one vehicle per day. Check the amount.")
+              return value
 
        def validate_file_size_and_type(self, file, max_size_mb=5, allowed_extensions=None):
         if not file:

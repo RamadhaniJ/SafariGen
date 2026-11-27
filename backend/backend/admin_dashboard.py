@@ -49,10 +49,13 @@ def dashboard_callback(request, context):
     # Things that silently affect prices or what guests see.
     attention = []
     config = ConfigurationData.objects.first()
-    if not config or not config.vehicle_rent_pricing:
+    has_default = bool(config and config.vehicle_rent_pricing)
+    no_own_rate = Company.objects.filter(vehicle_rate_per_day__isnull=True).count()
+    if not has_default and no_own_rate:
         attention.append({
-            "text": "No vehicle price per day is set — every quote uses $250/day.",
-            "action": "Set vehicle price", "url": _link("Configuration", "configurationdata"),
+            "text": f"{no_own_rate} compan{'y has' if no_own_rate == 1 else 'ies have'} no vehicle price and no default "
+                    "is set — their quotes use $250/day.",
+            "action": "Set default price", "url": _link("Configuration", "configurationdata"),
             "level": "danger",
         })
     no_rates = Accommodation.objects.annotate(n=Count("room_type__rates")).filter(n=0).count()
@@ -108,7 +111,7 @@ def dashboard_callback(request, context):
         "sg_shortcuts": [
             {"label": "Add destination", "icon": "add_location_alt", "url": reverse("admin:Destinations_destination_add")},
             {"label": "Add lodge", "icon": "add_home", "url": reverse("admin:Accommodation_accommodation_add")},
-            {"label": "Vehicle & transit prices", "icon": "directions_car", "url": _link("Configuration", "configurationdata")},
+            {"label": "Default vehicle price", "icon": "directions_car", "url": _link("Configuration", "configurationdata")},
             {"label": "Companies", "icon": "apartment", "url": _link("Users", "company")},
         ],
     })

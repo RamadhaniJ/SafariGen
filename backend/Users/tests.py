@@ -112,3 +112,22 @@ class EditCompanyTests(TestCase):
     def test_too_many_digits_is_rejected(self):
         r = self.edit(phone_number="+1234567890123456")
         self.assertEqual(r.status_code, 400)
+
+
+    def test_set_and_clear_vehicle_price(self):
+        self.assertEqual(self.edit(vehicle_rate_per_day="280.50").status_code, 200)
+        self.company.refresh_from_db()
+        self.assertEqual(str(self.company.vehicle_rate_per_day), "280.50")
+        self.assertEqual(self.edit(vehicle_rate_per_day="").status_code, 200)
+        self.company.refresh_from_db()
+        self.assertIsNone(self.company.vehicle_rate_per_day)
+
+    def test_response_lists_repriced_quotes(self):
+        r = self.edit(vehicle_rate_per_day="190")
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.json()["repriced_quotes"], [])   # no quotes for this company yet
+
+    def test_negative_vehicle_price_rejected(self):
+        r = self.edit(vehicle_rate_per_day="-5")
+        self.assertEqual(r.status_code, 400)
+        self.assertIn("vehicle_rate_per_day", r.json())

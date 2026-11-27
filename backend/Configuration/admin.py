@@ -17,8 +17,11 @@ class AdminConfigurationData(ModelAdmin):
     fieldsets = [
         (None, {
             "fields": ["vehicle_rent_pricing", "transit_fee_resident", "transit_fee_non_resident"],
-            "description": "Used by the pricing engine for every quote. Only the first row is used; "
-                           "if no vehicle price is set, quotes use $250 per vehicle per day.",
+            "description": "SafariGen-wide DEFAULT vehicle price, used for companies that haven't set "
+                           "their own (Companies → Pricing). If neither is set, quotes use $250 per "
+                           "vehicle per day. Changing this does NOT re-price saved quotes automatically: use "
+                           "Itineraries → select → \"Recalculate prices with current rates\". The two transit fee "
+                           "fields are not used by pricing; transit fees are set on each activity.",
         }),
     ]
 

@@ -38,7 +38,7 @@ class AdminPagesTests(TestCase):
         r = self.client.get(reverse("admin:index"))
         self.assertEqual(r.status_code, 200)
         html = r.content.decode()
-        for text in ["Needs attention", "Latest tour requests", "No vehicle price per day is set", "Quotes &amp; clients"]:
+        for text in ["Needs attention", "Latest tour requests", "no vehicle price and no default", "Quotes &amp; clients"]:
             self.assertIn(text, html)
 
     def test_every_list_and_add_page_opens(self):
@@ -72,3 +72,45 @@ class AdminPagesTests(TestCase):
                                                     full_name="S", role="STAFF", is_active=True)
         self.client.force_login(staff)
         self.assertEqual(self.client.get(reverse("admin:index")).status_code, 302)
+
+
+
+class RecalculatePricesActionTests(TestCase):
+    """Admin action that re-prices saved quotes after rates change."""
+
+    def test_recalculate_after_the_default_vehicle_price_changes(self):
+        # Company prices re-price automatically; the default price doesn't, so this
+        # action is how quotes of companies without their own price get updated.
+        from decimal import Decimal
+        from unittest.mock import patch
+        from Itinerary.models import ItineraryVersion, MainDayByDayItinerary
+        from Itinerary.pricing import calculate_and_save_pricing_snapshot
+        from Clients.models import Traveller
+        from Configuration.models import ConfigurationData
+
+        admin_user = CustomUserModel.objects.create_superuser(email="a@t.local", password="x-Strong-pass-123", full_name="A")
+        company = Company.objects.create(owner=admin_user, name="Co", email="co@x.test")
+        client = ClientInformation.objects.create(company=company, email="g@x.test", salutation="Mr", first_name="G", last_name="H")
+        req = ClientRequestInformation.objects.create(client_requested=client, tour_title="T", tour_type="P",
+                                                      country_visited="Tanzania", tour_start_date=date(2027, 7, 1))
+        Traveller.objects.create(request=req, age_category="ADULT", number=2)
+        version = ItineraryVersion.objects.create(client_request=req, version_number=1)
+        MainDayByDayItinerary.objects.create(version=version, day_number=1, nights_number=4)
+
+        config = ConfigurationData.objects.create(vehicle_rent_pricing=Decimal("250"))
+        with patch("Itinerary.pricing.generate_and_save_safari_map"):
+            calculate_and_save_pricing_snapshot(version, commission_percentage=10)   # $250 x 4 = 1000 + 10%
+            version.refresh_from_db()
+            self.assertEqual(version.version_pricing_snapshot.grand_total, Decimal("1100.00"))
+
+            config.vehicle_rent_pricing = Decimal("200")
+            config.save()
+
+            self.client.force_login(admin_user)
+            r = self.client.post(reverse("admin:Itinerary_itineraryversion_changelist"),
+                                 {"action": "recalculate_prices", "_selected_action": [str(version.pk)]}, follow=True)
+        self.assertEqual(r.status_code, 200)
+        self.assertIn("$1,100.00 → $880.00", r.content.decode())      # 200 x 4 = 800 + 10% (commission kept)
+        version.refresh_from_db()
+        self.assertEqual(version.version_pricing_snapshot.total_transport_vehicle, Decimal("800.00"))
+        self.assertEqual(version.version_pricing_snapshot.commission_percentage, Decimal("10.00"))

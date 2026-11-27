@@ -21,6 +21,7 @@ import {
   MapPin,
   MessageCircle,
   Share2,
+  Car,
 } from "lucide-react";
 
 // Social links shown to guests on quotes and PDFs (each one optional).
@@ -63,6 +64,7 @@ export default function ManagerEditCompanyPoUp({
   const [taxCertificate, setTaxCertificate] = useState(null);
   const [taxPreview, setTaxPreview] = useState(null);
   const [taxNumber, setTaxNumber] = useState("");
+  const [vehicleRate, setVehicleRate] = useState("");
   const [address, setAddress] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
   const [socials, setSocials] = useState(EMPTY_SOCIALS);
@@ -102,6 +104,7 @@ export default function ManagerEditCompanyPoUp({
     setWebsite(company.website || "");
     setCountry(company.country || "");
     setTaxNumber(company.tax_id_number || "");
+    setVehicleRate(company.vehicle_rate_per_day ?? "");
     setAddress(company.address || "");
     setWhatsapp(company.whatsapp_number || "");
     setSocials(Object.fromEntries(SOCIAL_FIELDS.map((f) => [f.key, company[f.key] || ""])));
@@ -217,6 +220,12 @@ export default function ManagerEditCompanyPoUp({
     // Locked on verified companies, so it can't be fixed here — don't block saving.
     if (!isVerified && !taxNumber.trim()) newErrors.taxNumber = "Tax ID number is required";
 
+    // Vehicle price: optional, but a sensible number if filled in.
+    if (String(vehicleRate).trim() !== "") {
+      const n = Number(vehicleRate);
+      if (!Number.isFinite(n) || n < 0) newErrors.vehicle_rate_per_day = "Enter a price of 0 or more";
+    }
+
     // Social links: a link if filled in (https:// is added automatically).
     SOCIAL_FIELDS.forEach(({ key, label }) => {
       const value = (socials[key] || "").trim();
@@ -251,6 +260,7 @@ export default function ManagerEditCompanyPoUp({
       formData.append("website", formattedWebsite);
       formData.append("country", country);
       formData.append("tax_id_number", taxNumber);
+      formData.append("vehicle_rate_per_day", String(vehicleRate).trim());
       formData.append("address", address.trim());
       formData.append("whatsapp_number", whatsapp.trim());
       SOCIAL_FIELDS.forEach(({ key }) => formData.append(key, formatUrl(socials[key] || "")));
@@ -261,11 +271,16 @@ export default function ManagerEditCompanyPoUp({
         formData.append("certificate_of_incorporation", certIncorporation);
       if (taxCertificate) formData.append("tax_id_certificate", taxCertificate);
 
-      await api.patch(`account/users/update/company/${company.id}/`, formData, {
+      const res = await api.patch(`account/users/update/company/${company.id}/`, formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
-      toast.success("Company updated successfully!");
+      const repriced = res?.data?.repriced_quotes || [];
+      toast.success(
+        repriced.length
+          ? `Company updated. ${repriced.length} open quote${repriced.length > 1 ? "s were" : " was"} re-priced with the new vehicle price.`
+          : "Company updated successfully!"
+      );
       onSuccess?.(); // 🔑 refresh parent list
     } catch (error) {
       let apiMessage = "Update failed. Please try again.";
@@ -538,6 +553,40 @@ export default function ManagerEditCompanyPoUp({
                 <p className="text-xs text-[#8E2A1F]">{errors.country}</p>
               )}
             </div>
+          </div>
+
+          {/* Pricing used for this company's quotes */}
+          <div className="rounded-2xl border border-[#0F2A2E]/10 bg-[#0F2A2E]/[0.02] p-5 space-y-4">
+            <div>
+              <p className="text-sm font-semibold text-[#0F2A2E] flex items-center gap-2">
+                <Car className="w-4 h-4" /> Pricing
+              </p>
+              <p className="text-xs text-[#6B6459] mt-1">
+                Used when your quotes are priced. Leave empty to use the SafariGen default.
+              </p>
+            </div>
+            <Field label="Vehicle price per day (USD)" error={errors.vehicle_rate_per_day}>
+              <div className="relative">
+                <span className="text-sm text-[#6B6459] absolute left-3.5 top-1/2 -translate-y-1/2">$</span>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  inputMode="decimal"
+                  value={vehicleRate}
+                  onChange={(e) => {
+                    setVehicleRate(e.target.value);
+                    setErrors((p) => ({ ...p, vehicle_rate_per_day: null }));
+                  }}
+                  className={`${inputBase} ${errors.vehicle_rate_per_day ? inputErr : inputOk}`}
+                  placeholder="e.g. 280"
+                />
+              </div>
+            </Field>
+            <p className="text-xs text-[#6B6459]">
+              Changing this re-prices your open quotes straight away (drafts, sent, and changes requested).
+              Accepted, rejected and archived quotes keep their price.
+            </p>
           </div>
 
           {/* Guest-facing contact details & social media (all optional) */}
