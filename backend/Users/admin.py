@@ -108,11 +108,17 @@ class AdminManagerCompany(ModelAdmin):
     def save_model(self, request, obj, form, change):
         super().save_model(request, obj, form, change)
         repriced = getattr(obj, "_repriced", [])
-        if repriced:
-            lines = [f"{v.client_request.tour_code}: ${old:,.2f} → ${new:,.2f}" if old is not None
-                     else f"{v.client_request.tour_code}: ${new:,.2f}" for v, old, new in repriced]
-            self.message_user(request, f"Vehicle price changed — {len(repriced)} open quote(s) re-priced: "
+        done = [r for r in repriced if not r.missing]
+        skipped = [r for r in repriced if r.missing]
+        if done:
+            lines = [f"{r.version.client_request.tour_code}: ${r.old_total:,.2f} → ${r.new_total:,.2f}"
+                     if r.old_total is not None else f"{r.version.client_request.tour_code}: ${r.new_total:,.2f}"
+                     for r in done]
+            self.message_user(request, f"Vehicle price changed — {len(done)} open quote(s) re-priced: "
                                        + "; ".join(lines), messages.SUCCESS)
+        for r in skipped:
+            self.message_user(request, f"{r.version.client_request.tour_code} kept its old price because prices "
+                                       f"are missing: " + " ".join(m["message"] for m in r.missing), messages.WARNING)
 
     @action(description="Mark selected companies as Verified")
     def mark_verified(self, request, queryset):

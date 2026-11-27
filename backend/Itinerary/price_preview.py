@@ -171,6 +171,9 @@ class ItineraryPricePreviewView(APIView):
                 "grand_total": _money(r.grand_total),
                 "price_per_person": _money(r.price_per_person),
             },
+            # Prices this quote needs that don't exist yet; it can't be saved until they're added.
+            "missing": r.missing,
+            "can_save": not r.missing,
             "lines": [
                 {**item,
                  "unit_price": _money(item["unit_price"]),

@@ -33,9 +33,13 @@ automatically, send quotes and generate PDFs.
    it sends the days (built by `Helpers/buildDaysPayload.js`) and shows the result.
    The per-destination/lodge fee hints in the pickers (`calculated_park_fee`,
    `calculated_concesion_fee`) are still estimates by tour start date; totals don't use them.
-4. Silent wrong prices: with no matching season, `_get_room_rate` falls back to
-   any rate. With no vehicle price, a hard-coded $250/day is used (also in
-   `Clients/Serializer.py` and the frontend hook).
+4. ~~Silent wrong prices.~~ Fixed on branch `fix/no-guessed-prices`: the engine never guesses.
+   A room with no rate for the night's season and no all-year rate, a park/mountain with no
+   park fee (or a mountain with no rescue fee) for a travelling guest type or season, an empty
+   child fee when children travel, or no vehicle price (company or default) is listed in
+   `PricingResult.missing`. Saving raises `MissingPricesError` (the create/edit APIs answer 400
+   with `missing_prices`, nothing is saved); the live price shows them in red and Save is
+   refused; re-pricing keeps the old price and reports them. A genuine all-year rate is still used.
 5. Seasons (`AccommodationSeason`, `DestinationSeason`) have day and month but
    no year, so 2026 and 2027 rates can't coexist.
 6. ~~Vehicle pricing is one global row.~~ Fixed on branch `fix/vehicle-price-per-company`:
@@ -164,7 +168,8 @@ Called when an itinerary is created (`Itinerary/Serializer.py`) or edited
      date by month/day (seasons may wrap over New Year, ends inclusive; with
      overlaps the first by `start_day, start_month` wins). For each selected
      room, use the rate for that season. If there's none, use the all-year rate
-     (season empty). If there's none of those either, use **any** rate (issue 4).
+     (season empty). If there's none of those either, the price is **missing**: the quote
+     can't be saved until it's added (it used to use any rate, issue 4).
      Line = price per night × rooms × nights. The whole stay uses the first night's season.
    - **B. Concession** (only if the accommodation is InsidePark). Per residency
      bucket: RESIDENT and EAC_MEMBER pay resident rates, NON_RESIDENT pay
@@ -183,7 +188,8 @@ Called when an itinerary is created (`Itinerary/Serializer.py`) or edited
      Not multiplied by nights.
 6. **Vehicle.** Daily rate from `vehicle_daily_rate_for()`: the company's
    `vehicle_rate_per_day`, else the default `ConfigurationData.vehicle_rent_pricing`,
-   else **$250** (issue 4). Line = vehicles × tour days × rate. The live preview in the
+   else the price is **missing** and the quote can't be saved (it used to be $250, issue 4).
+   Line = vehicles × tour days × rate. The live preview in the
    quote builder uses the same function.
 7. **Totals.** Subtotal = accommodation + park fees + concession + vehicle +
    activities + meals. Commission = subtotal × % / 100. Grand total = subtotal +

@@ -407,6 +407,7 @@ import {
   CheckCircle2Icon,
 } from "lucide-react";
 import useItineraryPricingGlobal from "../Hooks/useItineraryPrice";
+import MissingPricesNotice from "./MissingPricesNotice";
 
 const PRESET_COMMISSIONS = ["0", "10", "15", "20", "25", "30", "custom"];
 
@@ -524,6 +525,8 @@ export default function SmartPricingBreakdownGlobal({
             )}
           </div>
         </div>
+
+        <MissingPricesNotice missing={pricing.missing} />
 
         {/* ========================================== */}
         {/* 2. COST CATEGORIES GRID                    */}

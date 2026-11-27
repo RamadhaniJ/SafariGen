@@ -19,7 +19,7 @@ from Meal.models import OptionalMeal, MealPlan
 from Accommodation.models import Accommodation, AccommodationRoomType
 from ActivityLog.models import ActivitiesLogs
 from Clients.models import ClientRequestInformation, Traveller
-from Itinerary.pricing import calculate_and_save_pricing_snapshot
+from Itinerary.pricing import calculate_and_save_pricing_snapshot, MissingPricesError
 from Itinerary.pdf_cache import schedule_warm
 
 
@@ -274,11 +274,18 @@ class BulkItineraryCreateSerializer(serializers.Serializer):
             
 
             current_user = getattr(self.context.get("request"), "user", None)
-            snapshot = calculate_and_save_pricing_snapshot(
-                itinerary_version=new_version,
-                commission_percentage=commission_pct,
-                current_user=current_user
-            )
+            try:
+                snapshot = calculate_and_save_pricing_snapshot(
+                    itinerary_version=new_version,
+                    commission_percentage=commission_pct,
+                    current_user=current_user
+                )
+            except MissingPricesError as e:
+                # Never save a quote with guessed prices: undo the whole save and say what's missing.
+                raise serializers.ValidationError({
+                    "detail": "This quote can't be saved: some prices are missing. Add them, then save again.",
+                    "missing_prices": e.missing,
+                })
             schedule_warm(new_version.id)  # pre-build the guest PDF once saved
 
             if client.client_requested.created_by != current_user:

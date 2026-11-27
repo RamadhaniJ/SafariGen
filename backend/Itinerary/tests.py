@@ -33,7 +33,7 @@ from Itinerary.models import (
     MainDayByDayItinerary,
     SelectedDayRoom,
 )
-from Itinerary.pricing import calculate_and_save_pricing_snapshot
+from Itinerary.pricing import MissingPricesError, calculate_and_save_pricing_snapshot
 from Meal.models import MealPlan, OptionalMeal
 
 D = Decimal
@@ -333,11 +333,12 @@ class TravellerAndVehicleTests(PricingTestCase):
         self.assertEqual(snap.total_transport_vehicle, D("200.00"))
         self.assertEqual(snap.price_per_person, D("0.00"))
 
-    def test_no_vehicle_price_configured_falls_back_to_250(self):
-        # CURRENT BEHAVIOUR (review issue 4): a hard-coded $250/day is used
-        # silently when no ConfigurationData row exists.
-        snap = self._vehicle_only([("ADULT", 2, False)], config_rate=None)
-        self.assertEqual(snap.total_transport_vehicle, D("500.00"))
+    def test_no_vehicle_price_anywhere_blocks_saving(self):
+        # Was: a hard-coded $250/day used silently (review issue 4, fixed).
+        with self.assertRaises(MissingPricesError) as ctx:
+            self._vehicle_only([("ADULT", 2, False)], config_rate=None)
+        self.assertEqual([m["kind"] for m in ctx.exception.missing], ["VEHICLE"])
+        self.assertFalse(ItineraryPricingSnapshot.objects.exists())
 
     def test_first_configuration_row_wins(self):
         # CURRENT BEHAVIOUR (review issue 6): one global row, shared by all companies.
@@ -419,29 +420,31 @@ class AccommodationRateTests(PricingTestCase):
         self.assertEqual(total, D("200.00"))
         self.assertIn("| All Year |", items[0].item_description)
 
-    def test_no_matching_season_and_no_all_year_rate_uses_any_rate(self):
-        # CURRENT BEHAVIOUR (review issue 4): silently charges some other
-        # season's rate (whichever RoomRate was created first).
+    def test_no_matching_season_and_no_all_year_rate_blocks_saving(self):
+        # Was: silently charged another season's rate labelled "All Year" (issue 4, fixed).
         high = make_acc_season(self.acc, "High", (1, 7), (31, 8))
         peak = make_acc_season(self.acc, "Peak", (20, 12), (5, 1))
         room = make_room(self.acc, "Tent", [(high, D("500")), (peak, D("900"))])
-        total, items = self._room_price(date(2026, 2, 1), room)
-        self.assertEqual(total, D("500.00"))
-        self.assertIn("| All Year |", items[0].item_description)
+        with self.assertRaises(MissingPricesError) as ctx:
+            self._room_price(date(2026, 2, 1), room)
+        (m,) = ctx.exception.missing
+        self.assertEqual(m["kind"], "ROOM_RATE")
+        self.assertIn("Camp — Tent: no price for 01 Feb 2026", m["message"])
+        self.assertIn("no all-year price", m["message"])
 
-    def test_season_matched_but_room_has_no_rate_for_it(self):
-        # CURRENT BEHAVIOUR: falls back to all-year rate, but the line still says "High".
+    def test_season_matched_but_room_has_no_rate_for_it_uses_all_year_rate(self):
+        # A genuine all-year price is still used; the line now says so (it used to say "High").
         make_acc_season(self.acc, "High", (1, 7), (31, 8))
         room = make_room(self.acc, "Tent", [(None, D("200"))])
         total, items = self._room_price(date(2026, 7, 10), room)
         self.assertEqual(total, D("200.00"))
-        self.assertIn("| High |", items[0].item_description)
+        self.assertIn("| All Year |", items[0].item_description)
 
-    def test_room_with_no_rates_is_skipped(self):
+    def test_room_with_no_rates_blocks_saving(self):
+        # Was: silently left out ($0). Now it's a missing price.
         room = make_room(self.acc, "Tent", [])
-        total, items = self._room_price(date(2026, 7, 10), room)
-        self.assertEqual(total, D("0.00"))
-        self.assertEqual(items, [])
+        with self.assertRaises(MissingPricesError):
+            self._room_price(date(2026, 7, 10), room)
 
     def test_overlapping_seasons_pick_lowest_start_day(self):
         # CURRENT BEHAVIOUR: AccommodationSeason is ordered by (start_day, start_month),
@@ -514,9 +517,22 @@ class ResidencyAndFeeTests(PricingTestCase):
 
     def test_mountain_is_charged_like_a_park(self):
         mountain = make_destination("Kilimanjaro", "Mountain")
-        make_fee(mountain, make_dest_season(mountain, "all_year"), "RescueFee", "NON_RESIDENT", D("20"), D("10"))
+        all_year = make_dest_season(mountain, "all_year")
+        make_fee(mountain, all_year, "ParkFee", "NON_RESIDENT", D("70"), D("20"))
+        make_fee(mountain, all_year, "RescueFee", "NON_RESIDENT", D("20"), D("10"))
         snap = self._price("Germany", [("ADULT", 2, False)], mountain)
-        self.assertEqual(snap.total_park_fees, D("40.00"))  # ALL_YEAR match is case-insensitive
+        self.assertEqual(snap.total_park_fees, D("180.00"))  # (70 + 20) x 2; ALL_YEAR match is case-insensitive
+
+    def test_mountain_without_rescue_fee_blocks_saving(self):
+        mountain = make_destination("Meru", "Mountain")
+        make_fee(mountain, make_dest_season(mountain, "ALL_YEAR"), "ParkFee", "NON_RESIDENT", D("50"), D("15"))
+        with self.assertRaises(MissingPricesError) as ctx:
+            self._price("Germany", [("ADULT", 1, False)], mountain)
+        self.assertIn("no rescue fee", ctx.exception.missing[0]["message"])
+
+    def test_park_without_rescue_fee_is_fine(self):
+        # Rescue fees are for mountains; a park without one is normal.
+        self.assertEqual(self._price("Germany", [("ADULT", 1, False)], self.park).total_park_fees, D("60.00"))
 
     def test_seasonal_park_fee_beats_all_year(self):
         high = make_dest_season(self.park, "High", (1, 7), (31, 10))
@@ -524,17 +540,22 @@ class ResidencyAndFeeTests(PricingTestCase):
         self.assertEqual(self._price("Germany", [("ADULT", 1, False)], self.park, start=date(2026, 8, 1)).total_park_fees, D("80.00"))
         self.assertEqual(self._price("Germany", [("ADULT", 1, False)], self.park, start=date(2026, 3, 1)).total_park_fees, D("60.00"))
 
-    def test_missing_fee_for_a_residency_charges_nothing(self):
+    def test_missing_fee_for_a_residency_blocks_saving(self):
+        # Was: silently charged $0 park fees to East African guests (issue 4, fixed).
         park = make_destination("Mikumi", "Park")
         make_fee(park, make_dest_season(park, "ALL_YEAR"), "ParkFee", "NON_RESIDENT", D("30"), D("10"))
-        snap = self._price("Kenya", [("ADULT", 2, False)], park)
-        self.assertEqual(snap.total_park_fees, D("0.00"))
+        with self.assertRaises(MissingPricesError) as ctx:
+            self._price("Kenya", [("ADULT", 2, False)], park)
+        self.assertIn("Mikumi: no park entry fee for eac member guests", ctx.exception.missing[0]["message"])
 
-    def test_empty_child_fee_charges_nothing_for_children(self):
+    def test_empty_child_fee_blocks_saving_when_children_travel(self):
         park = make_destination("Ruaha", "Park")
         make_fee(park, make_dest_season(park, "ALL_YEAR"), "ParkFee", "NON_RESIDENT", D("30"), None)
-        snap = self._price("Germany", [("ADULT", 1, False), ("CHILD", 2, False)], park)
-        self.assertEqual(snap.total_park_fees, D("30.00"))
+        with self.assertRaises(MissingPricesError) as ctx:
+            self._price("Germany", [("ADULT", 1, False), ("CHILD", 2, False)], park)
+        self.assertIn("park entry fee for children (non resident) is empty", ctx.exception.missing[0]["message"])
+        # ...but adults-only trips are fine.
+        self.assertEqual(self._price("Germany", [("ADULT", 1, False)], park).total_park_fees, D("30.00"))
 
     def test_concession_only_inside_park_and_per_night(self):
         outside = make_accommodation("Town Lodge")
@@ -670,9 +691,9 @@ class VehiclePricePerCompanyTests(PricingTestCase):
         snap, _ = self._quote_for(None)
         self.assertEqual(snap.total_transport_vehicle, D("600.00"))
 
-    def test_no_company_price_and_no_default_still_250(self):
-        snap, _ = self._quote_for(None)
-        self.assertEqual(snap.total_transport_vehicle, D("750.00"))
+    def test_no_company_price_and_no_default_blocks_saving(self):
+        with self.assertRaises(MissingPricesError):
+            self._quote_for(None)
 
     def test_two_companies_get_their_own_prices(self):
         ConfigurationData.objects.create(vehicle_rent_pricing=D("200"))
@@ -738,7 +759,8 @@ class AutoRepriceOnVehicleRateChangeTests(RepriceTestBase):
         self.assertEqual(new.total_transport_vehicle, D("800.00"))
         self.assertEqual(new.grand_total, D("880.00"))
         self.assertEqual(new.commission_percentage, D("10.00"))
-        self.assertEqual([(v.pk, old, n) for v, old, n in repriced], [(version.pk, D("1100.00"), D("880.00"))])
+        self.assertEqual([(r.version.pk, r.old_total, r.new_total, r.missing) for r in repriced],
+                         [(version.pk, D("1100.00"), D("880.00"), [])])
         version.client_request.refresh_from_db()
         self.assertEqual(version.client_request.safari_grand_total, D("880.00"))
 
@@ -816,7 +838,7 @@ class RepriceWhenQuoteReopenedTests(RepriceTestBase):
                 self.set_rate(D(str(100 + _uid())))
                 rate = self.company.vehicle_rate_per_day
                 version.status = reopen_as; version.save()
-                self.assertEqual(version._repriced[0][2], self.total(version).grand_total)
+                self.assertEqual(version._repriced[0].new_total, self.total(version).grand_total)
                 self.assertEqual(self.total(version).total_transport_vehicle, rate * 4)
 
     def test_moving_between_open_statuses_does_not_reprice(self):
@@ -838,3 +860,85 @@ class RepriceWhenQuoteReopenedTests(RepriceTestBase):
         version.status = "ACCEPTED"; version.save()
         self.assertEqual(version._repriced, [])
         self.assertEqual(self.total(version).pk, snap.pk)
+
+
+
+class MissingPricesTests(PricingTestCase):
+    """Review issue 4: never guess a price; list what's missing instead."""
+
+    def setUp(self):
+        super().setUp()
+        ConfigurationData.objects.create(vehicle_rent_pricing=D("200"))
+        self.acc = make_accommodation("Planet Lodge")
+        jan = make_acc_season(self.acc, "High", (1, 1), (28, 2))
+        self.room = make_room(self.acc, "Triple", [(jan, D("197"))])      # no July price, no all-year price
+
+    def test_saving_lists_every_missing_price_and_saves_nothing(self):
+        park = make_destination("Mikumi", "Park")
+        make_fee(park, make_dest_season(park, "ALL_YEAR"), "ParkFee", "NON_RESIDENT", D("30"), D("10"))
+        version = make_version(make_client_request(country="Kenya", start=date(2027, 7, 12),
+                                                   travellers=[("ADULT", 2, False)]))
+        make_day(version, 1, 1, park, self.acc, rooms=[(self.room, 1)])
+        with self.assertRaises(MissingPricesError) as ctx:
+            self.price(version)
+        kinds = sorted(m["kind"] for m in ctx.exception.missing)
+        self.assertEqual(kinds, ["PARK_FEE", "ROOM_RATE"])
+        self.assertTrue(all(m["fix"] for m in ctx.exception.missing))
+        self.assertFalse(ItineraryPricingSnapshot.objects.filter(version=version).exists())
+
+    def test_reprice_keeps_old_price_and_reports_missing(self):
+        from Itinerary.pricing import reprice_versions
+        version = make_version(make_client_request(start=date(2027, 1, 20), travellers=[("ADULT", 2, False)]))
+        make_day(version, 1, 1, None, self.acc, rooms=[(self.room, 1)])
+        old = self.price(version)                                          # January: price exists
+        version.client_request.tour_start_date = date(2027, 7, 12)         # move to July: no price
+        version.client_request.save()
+        (result,) = reprice_versions([version])
+        self.assertIsNone(result.new_total)
+        self.assertEqual(result.missing[0]["kind"], "ROOM_RATE")
+        self.assertEqual(ItineraryPricingSnapshot.objects.get(version=version).pk, old.pk)   # untouched
+
+    def test_save_api_refuses_with_the_list(self):
+        from rest_framework.test import APIClient
+        from Users.models import Company, CustomUserModel
+        m = CustomUserModel.objects.create_user(email="m@x.test", password="x-Strong-pass-1", full_name="M",
+                                                role="MANAGER", is_active=True)
+        company = Company.objects.create(owner=m, name="Co", email="co@x.test")
+        req = make_client_request(start=date(2027, 7, 12), travellers=[("ADULT", 2, False)])
+        req.client_requested.company = company
+        req.client_requested.created_by = m
+        req.client_requested.save()
+        dest = make_destination("Arusha", "City")
+        api = APIClient()
+        api.force_authenticate(m)
+        r = api.post("/api/itinerary/bulk/create/daybyday/", {
+            "client_id": str(req.id), "commission_percentage": "10",
+            "days": [{"day_number": 1, "nights": 1, "destination_id": dest.id, "accommodation_id": self.acc.id,
+                      "selected_rooms": [{"room_type_id": self.room.id, "quantity": 1}]}],
+        }, format="json")
+        self.assertEqual(r.status_code, 400)
+        body = r.json()
+        self.assertIn("some prices are missing", str(body["detail"]))
+        self.assertIn("Planet Lodge — Triple: no price for 12 Jul 2027", str(body["missing_prices"]))
+        self.assertFalse(req.itinerary_versions.exists())                 # nothing saved
+
+    def test_preview_shows_missing_and_cannot_save(self):
+        from rest_framework.test import APIClient
+        from Users.models import Company, CustomUserModel
+        m = CustomUserModel.objects.create_user(email="p@x.test", password="x-Strong-pass-1", full_name="P",
+                                                role="MANAGER", is_active=True)
+        company = Company.objects.create(owner=m, name="Co2", email="co2@x.test")
+        req = make_client_request(start=date(2027, 7, 12), travellers=[("ADULT", 2, False)])
+        req.client_requested.company = company
+        req.client_requested.save()
+        api = APIClient()
+        api.force_authenticate(m)
+        r = api.post("/api/itinerary/price-preview/", {
+            "client_id": str(req.id),
+            "days": [{"day_number": 1, "nights": 1, "accommodation_id": self.acc.id,
+                      "selected_rooms": [{"room_type_id": self.room.id, "quantity": 1}]}],
+        }, format="json")
+        self.assertEqual(r.status_code, 200)
+        self.assertFalse(r.json()["can_save"])
+        self.assertEqual(r.json()["missing"][0]["kind"], "ROOM_RATE")
+        self.assertEqual(r.json()["totals"]["accommodation"], "0.00")      # never a guessed price

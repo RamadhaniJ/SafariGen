@@ -534,6 +534,7 @@
 
 import math
 from dataclasses import dataclass, field
+from typing import NamedTuple
 from datetime import timedelta
 from decimal import Decimal
 from django.db import transaction
@@ -625,12 +626,14 @@ def _determine_destination_season(destination, tour_date):
 
 
 def _get_room_rate(room_type, season):
+    """The rate for this season, else the room's all-year rate, else None (price missing).
+    (It used to fall back to *any* rate, e.g. a January price for a July night.)"""
     rates = RoomRate.objects.filter(room_type=room_type)
     if season:
         matched = rates.filter(season=season).first()
         if matched:
             return matched
-    return rates.filter(season__isnull=True).first() or rates.first()
+    return rates.filter(season__isnull=True).first()
 
 
 def _format_date_display(start_date, day_number, nights):
@@ -645,7 +648,6 @@ def _format_date_display(start_date, day_number, nights):
     return f"{day_date.strftime('%d %b')} - {end_date.strftime('%d %b %Y')}"
 
 
-DEFAULT_VEHICLE_RATE = Decimal("250.00")
 
 
 def vehicle_daily_rate_for(client_request=None):
@@ -654,10 +656,11 @@ def vehicle_daily_rate_for(client_request=None):
 
     1. The tour company's own price (Company.vehicle_rate_per_day), if set.
     2. Otherwise the SafariGen-wide default (first ConfigurationData row).
-    3. Otherwise $250 (see review issue 4: this fallback is silent).
+    3. Otherwise there is no price: returns (0, "missing") and the quote can't be saved
+       (it used to silently use $250 — review issue 4).
 
     Used by the pricing engine AND the live price preview, so they always agree.
-    Returns (Decimal rate, source) with source "company", "default" or "fallback".
+    Returns (Decimal rate, source) with source "company", "default" or "missing".
     """
     company = None
     if client_request is not None:
@@ -669,7 +672,7 @@ def vehicle_daily_rate_for(client_request=None):
     config = ConfigurationData.objects.first()
     if config and config.vehicle_rent_pricing:
         return Decimal(str(config.vehicle_rent_pricing)), "default"
-    return DEFAULT_VEHICLE_RATE, "fallback"
+    return Decimal("0.00"), "missing"
 
 
 def _get_vehicle_daily_rate(client_request=None):
@@ -769,6 +772,15 @@ class PricingResult:
     grand_total: Decimal
     price_per_person: Decimal
     breakdown_items: list
+    missing: list = field(default_factory=list)   # prices that don't exist -> quote can't be saved
+
+
+class MissingPricesError(ValueError):
+    """Raised when saving a quote that needs prices nobody has entered."""
+
+    def __init__(self, missing):
+        self.missing = missing
+        super().__init__("; ".join(m["message"] for m in missing))
 
 
 def compute_pricing(client_request, days, travellers, tour_start_date, commission_percentage=0):
@@ -797,6 +809,11 @@ def compute_pricing(client_request, days, travellers, tour_start_date, commissio
     sum_activities = Decimal("0.00")
     sum_meals = Decimal("0.00")
     breakdown_items = []
+    missing = []          # prices the quote needs that nobody has entered
+
+    def _missing(kind, day_num, date_display, message, fix):
+        missing.append({"kind": kind, "day_number": day_num, "date_display": date_display,
+                        "message": message, "fix": fix})
 
     # Total tour days (for vehicle)
     total_tour_days = 0
@@ -841,7 +858,16 @@ def compute_pricing(client_request, days, travellers, tour_start_date, commissio
             for sr in day.rooms:
                 rate_obj = _get_room_rate(sr.room_type, acc_season)
                 if not rate_obj:
+                    _missing(
+                        "ROOM_RATE", day_num, date_display,
+                        f"{accommodation.name} — {sr.room_type.name}: no price for {date_display}"
+                        + (f" ({acc_season.name})" if acc_season else " (no season covers this date)")
+                        + " and no all-year price.",
+                        f"Admin → Lodges & hotels → {accommodation.name} → Room types → prices",
+                    )
                     continue
+                # Name the season whose price was actually used.
+                season_name = rate_obj.season.name if rate_obj.season_id else "All Year"
                 unit_price = Decimal(str(rate_obj.price_per_night))
                 qty = Decimal(str(sr.quantity))
                 line_total = unit_price * qty * Decimal(str(nights))
@@ -935,7 +961,25 @@ def compute_pricing(client_request, days, travellers, tour_start_date, commissio
                             residency_label=residency_label,
                         ).first()
                     if not fee_obj:
+                        # Rescue fees only apply to mountains; a park without one is normal.
+                        if fee_category == "ParkFee" or destination.destination_type == "Mountain":
+                            _missing(
+                                "PARK_FEE", day_num, date_display,
+                                f"{destination.name}: no {cat_label.lower()} for {residency_label.replace('_', ' ').lower()} "
+                                f"guests on {date_display}" + (f" ({season_name})" if dest_season else "") + ".",
+                                f"Admin → Destinations → {destination.name} → Park & rescue fees",
+                            )
                         continue
+
+                    for who, count, fee in (("adults", bucket["adults"], fee_obj.adult_fee),
+                                            ("children", bucket["children"], fee_obj.child_fee)):
+                        if count > 0 and fee is None:
+                            _missing(
+                                "PARK_FEE", day_num, date_display,
+                                f"{destination.name}: {cat_label.lower()} for {who} "
+                                f"({residency_label.replace('_', ' ').lower()}) is empty.",
+                                f"Admin → Destinations → {destination.name} → Park & rescue fees",
+                            )
 
                     if bucket["adults"] > 0 and fee_obj.adult_fee:
                         adult_fee = Decimal(str(fee_obj.adult_fee))
@@ -1035,6 +1079,15 @@ def compute_pricing(client_request, days, travellers, tour_start_date, commissio
     # VEHICLE (all days)
     # ==========================================
     daily_rate, rate_source = vehicle_daily_rate_for(client_request)
+    if rate_source == "missing":
+        if total_tour_days > 0:
+            company = getattr(getattr(client_request, "client_requested", None), "company", None)
+            _missing(
+                "VEHICLE", 0, f"All {total_tour_days} Days",
+                f"No vehicle price per day is set for {getattr(company, 'name', 'this company')} "
+                "and there is no SafariGen default.",
+                "Company → Edit → Pricing, or Admin → Settings → Default vehicle price",
+            )
     vehicle_total = (
         Decimal(str(vehicles_needed))
         * Decimal(str(total_tour_days))
@@ -1086,6 +1139,7 @@ def compute_pricing(client_request, days, travellers, tour_start_date, commissio
         grand_total=grand_total,
         price_per_person=price_per_person,
         breakdown_items=breakdown_items,
+        missing=missing,
     )
 
 
@@ -1119,6 +1173,9 @@ def calculate_and_save_pricing_snapshot(itinerary_version, commission_percentage
     vehicle_total, sum_activities, sum_meals = r.vehicle_total, r.sum_activities, r.sum_meals
     subtotal_net, commission_pct, commission_amount = r.subtotal_net, r.commission_pct, r.commission_amount
     grand_total, price_per_person, breakdown_items = r.grand_total, r.price_per_person, r.breakdown_items
+    if r.missing:
+        # Never save a quote with guessed or $0 prices (review issue 4).
+        raise MissingPricesError(r.missing)
 
     # ==========================================
     # SAVE (atomic)
@@ -1179,10 +1236,18 @@ def calculate_and_save_pricing_snapshot(itinerary_version, commission_percentage
 FROZEN_STATUSES = ("ACCEPTED", "REJECTED", "ARCHIVED")
 
 
+class RepriceResult(NamedTuple):
+    version: object
+    old_total: object          # Decimal or None
+    new_total: object          # Decimal, or None when skipped
+    missing: list              # missing prices that stopped the re-price ([] if done)
+
+
 def reprice_versions(versions, current_user=None):
     """
     Re-price saved quotes with today's rates. Keeps each quote's commission % and
-    route map. Returns [(version, old_total, new_total)].
+    route map. A quote whose new price would need missing prices is left as it was
+    and reported (new_total=None, missing=[...]).
     """
     results = []
     for version in versions:
@@ -1190,11 +1255,16 @@ def reprice_versions(versions, current_user=None):
         old_total = old.grand_total if old else None
         commission = old.commission_percentage if old else 0
         user = current_user or (old.generated_by if old else None)
-        new = calculate_and_save_pricing_snapshot(
-            version, commission_percentage=commission, current_user=user, regenerate_map=False,
-        )
+        try:
+            with transaction.atomic():
+                new = calculate_and_save_pricing_snapshot(
+                    version, commission_percentage=commission, current_user=user, regenerate_map=False,
+                )
+        except MissingPricesError as e:
+            results.append(RepriceResult(version, old_total, None, e.missing))
+            continue
         new.refresh_from_db()
-        results.append((version, old_total, new.grand_total))
+        results.append(RepriceResult(version, old_total, new.grand_total, []))
     return results
 
 

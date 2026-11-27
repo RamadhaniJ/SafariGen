@@ -9,6 +9,7 @@ import { toast } from "react-toastify";
 import api from "../../../Apis/api";
 import useItineraryPricingGlobal from "../Hooks/useItineraryPrice";
 import SmartPricingBreakdownGlobal from "../BreakDown/PriceBreakDown";
+import MissingPricesNotice from "../BreakDown/MissingPricesNotice";
 
 import {
   Plus, Utensils, Sparkles, Calendar, MapPin, Building2,
@@ -255,6 +256,12 @@ export default function ItinerariesEditingGlobal({ dataToEdit, clientId, version
   // ==========================================================
   const handleEditBulkSave = async (e) => {
     if (e?.preventDefault) e.preventDefault();
+
+    // Prices nobody has entered are never guessed: list them instead of saving.
+    if (pricing.missing?.length) {
+      toast.error(`Can't save yet: ${pricing.missing.length} price${pricing.missing.length > 1 ? "s are" : " is"} missing. See the red list above the price.`);
+      return;
+    }
 
     const totalTourDays = enrichedDays[enrichedDays.length - 1]?.endDaySpan || dayConfigs.reduce((sum, item) => sum + item.nights, 0) + 1;
 
@@ -553,6 +560,8 @@ export default function ItinerariesEditingGlobal({ dataToEdit, clientId, version
             );
           })}
         </div>
+
+        <MissingPricesNotice missing={pricing.missing} />
 
         {/* Pricing Summary */}
         <div className="relative overflow-hidden bg-white border border-[#E4DCCB]  p-6 shadow-sm">

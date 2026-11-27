@@ -70,9 +70,11 @@ class CompanyOnboardingSerializer(serializers.ModelSerializer):
        def get_repriced_quotes(self, obj):
               """Open quotes re-priced by this save (vehicle price changed)."""
               return [
-                     {"tour_code": v.client_request.tour_code,
-                      "old_total": str(old) if old is not None else None, "new_total": str(new)}
-                     for v, old, new in getattr(obj, "_repriced", [])
+                     {"tour_code": r.version.client_request.tour_code,
+                      "old_total": str(r.old_total) if r.old_total is not None else None,
+                      "new_total": str(r.new_total) if r.new_total is not None else None,
+                      "missing_prices": [m["message"] for m in r.missing]}
+                     for r in getattr(obj, "_repriced", [])
               ]
 
        class Meta:
