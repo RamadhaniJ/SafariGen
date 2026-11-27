@@ -34,7 +34,7 @@ class SeasonInline(TabularInline):
     extra = 0
     fields = ["name", "start_day", "start_month", "end_day", "end_month"]
     verbose_name = "Season"
-    verbose_name_plural = "Seasons (day / month)"
+    verbose_name_plural = "Seasons (dates)"
     tab = True
 
 
@@ -51,8 +51,8 @@ class RoomTypeInline(TabularInline):
         if not obj.pk:
             return "Save first"
         n = obj.rates.count()
-        url = reverse("admin:Accommodation_roomrate_changelist") + f"?room_type__id__exact={obj.pk}"
-        return format_html('<a href="{}" style="font-weight:600">{} price{} →</a>', url, n, "" if n == 1 else "s")
+        url = reverse("admin:accommodation-price-grid", args=[obj.accommodation_id])
+        return format_html('<a href="{}" style="font-weight:600">{} price{} → edit in grid</a>', url, n, "" if n == 1 else "s")
 
 
 class DescriptionInline(StackedInline):
@@ -74,12 +74,13 @@ class AccommodationImagesInline(TabularInline):
 @admin.register(Accommodation)
 class AdminAccommodation(ModelAdmin):
     list_display = ["name", "destination", "type_label", "location_label", "rates_count", "sponsored", "bulk_upload_link"]
+    readonly_fields = ["price_grid_button"]
     list_filter = ["tag_label", "park_status", "is_sponsored", "destination"]
     search_fields = ["name", "destination__name"]
     list_select_related = ["destination"]
     inlines = [RoomTypeInline, SeasonInline, DescriptionInline, AccommodationImagesInline]
     fieldsets = [
-        (None, {"fields": ["name", "destination", "tag_label", "featured_image"]}),
+        (None, {"fields": ["name", "destination", "tag_label", "featured_image", "price_grid_button"]}),
         ("Location & park fees", {
             "fields": ["park_status",
                        ("concession_fee_adult_non_resident", "concession_fee_child_non_resident"),
@@ -98,11 +99,22 @@ class AdminAccommodation(ModelAdmin):
         return obj.get_park_status_display()
 
     @display(description="Room prices")
+    def price_grid_button(self, obj):
+        if not obj or not obj.pk:
+            return "Save the lodge first, then add room types, seasons and prices."
+        url = reverse("admin:accommodation-price-grid", args=[obj.pk])
+        return format_html(
+            '<a href="{}" style="display:inline-block;background:var(--color-primary-600);color:#fff;'
+            'padding:8px 16px;border-radius:8px;font-weight:700;text-decoration:none">'
+            'Open room prices grid (per season) →</a>', url)
+
+    @display(description="Room prices")
     def rates_count(self, obj):
+        url = reverse("admin:accommodation-price-grid", args=[obj.pk])
         n = RoomRate.objects.filter(room_type__accommodation=obj).count()
         if n == 0:
-            return format_html('<span style="color:#dc2626;font-weight:600">None — quotes can\'t be saved</span>')
-        return n
+            return format_html('<a href="{}" style="color:#dc2626;font-weight:600">None — add prices →</a>', url)
+        return format_html('<a href="{}" style="font-weight:600">{} →</a>', url, n)
 
     @display(description="Sponsored", boolean=True)
     def sponsored(self, obj):
@@ -113,12 +125,51 @@ class AdminAccommodation(ModelAdmin):
         urls = super().get_urls()
         custom_urls = [
             path(
+                '<path:object_id>/prices/',
+                self.admin_site.admin_view(self.price_grid_view),
+                name='accommodation-price-grid',
+            ),
+            path(
                 '<path:object_id>/bulk-upload-images/',
                 self.admin_site.admin_view(self.bulk_upload_images_view),
                 name='accommodation-bulk-upload-images',
             ),
         ]
         return custom_urls + urls
+
+    def price_grid_view(self, request, object_id):
+        """Room types × meal plans by season: type a price per room per night in each cell."""
+        from django.contrib import messages
+        from django.core.exceptions import PermissionDenied
+        from django.shortcuts import redirect
+        from Accommodation.price_grid import build_grid, save_grid
+
+        accommodation = self.get_object(request, object_id)
+        if accommodation is None:
+            return redirect("admin:Accommodation_accommodation_changelist")
+        if not self.has_view_or_change_permission(request, accommodation):
+            raise PermissionDenied
+        errors = []
+        if request.method == "POST":
+            if not self.has_change_permission(request, accommodation):
+                raise PermissionDenied
+            errors, counts = save_grid(accommodation, request.POST)
+            if not errors:
+                changed = sum(counts.values())
+                messages.success(request, "Prices saved: " + ", ".join(f"{v} {k}" for k, v in counts.items() if v)
+                                 if changed else "No changes.")
+                return redirect(request.get_full_path())
+        grid = build_grid(accommodation, show_all_plans=request.GET.get("all_plans") == "1",
+                          posted=request.POST if errors else None)
+        context = {
+            **self.admin_site.each_context(request),
+            "opts": self.model._meta,
+            "accommodation": accommodation,
+            "grid": grid,
+            "errors": errors,
+            "title": f"Room prices: {accommodation.name}",
+        }
+        return TemplateResponse(request, "admin/accommodation_price_grid.html", context)
 
     def bulk_upload_images_view(self, request, object_id):
         accommodation = self.get_object(request, object_id)

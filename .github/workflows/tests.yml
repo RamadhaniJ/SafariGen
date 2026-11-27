@@ -42,7 +42,7 @@ jobs:
       - name: Run tests
         # Listed explicitly: a plain "manage.py test" still trips over the
         # stray Itinerary/test.py file (review issue 8).
-        run: python manage.py test backend Users Itinerary.tests Itinerary.tests_pdf_cache Itinerary.tests_price_preview
+        run: python manage.py test backend Users Accommodation Itinerary.tests Itinerary.tests_pdf_cache Itinerary.tests_price_preview
 
   frontend:
     name: Frontend build
