@@ -44,6 +44,10 @@ ALLOWED_HOSTS = ['*']
 # Application definition
 
 INSTALLED_APPS = [
+    # Modern admin theme; must come before django.contrib.admin.
+    "unfold",
+    "unfold.contrib.filters",
+
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -180,6 +184,9 @@ USE_TZ = True
 
 
 STATIC_URL = 'static/'
+# Where `manage.py collectstatic` gathers static files (admin theme CSS/JS) for
+# the web server to serve in production.
+STATIC_ROOT = os.getenv("STATIC_ROOT", str(BASE_DIR / "staticfiles"))
 MEDIA_URL = "/media/"
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
@@ -232,11 +239,100 @@ PDF_CACHE_VERSION = os.getenv("PDF_CACHE_VERSION", "2")
 PDF_PREBUILD_ENABLED = os.getenv("PDF_PREBUILD_ENABLED", "true").strip().lower() not in ("0", "false", "no", "off")
 
 
+# ---------------------------------------------------------------------------
+# Admin dashboard look and menu (django-unfold). See backend/admin_dashboard.py
+# ---------------------------------------------------------------------------
+from django.urls import reverse_lazy  # noqa: E402
 
 
+def _admin_link(title, icon, app, model):
+    return {"title": title, "icon": icon, "link": reverse_lazy(f"admin:{app}_{model}_changelist")}
 
 
-
-
-
+UNFOLD = {
+    "SITE_TITLE": "SafariGen Admin",
+    "SITE_HEADER": "SafariGen",
+    "SITE_SUBHEADER": "Back office",
+    "SITE_SYMBOL": "travel_explore",
+    "SITE_URL": FRONTEND_URL,
+    "SHOW_HISTORY": True,
+    "SHOW_VIEW_ON_SITE": False,
+    "DASHBOARD_CALLBACK": "backend.admin_dashboard.dashboard_callback",
+    "ENVIRONMENT": "backend.admin_dashboard.environment_callback",
+    # Safari gold as the accent colour.
+    "COLORS": {
+        "primary": {
+            "50": "oklch(98.2% .018 85)",
+            "100": "oklch(95.4% .045 85)",
+            "200": "oklch(90.5% .085 82)",
+            "300": "oklch(84.5% .12 78)",
+            "400": "oklch(77% .14 72)",
+            "500": "oklch(70% .14 68)",
+            "600": "oklch(61% .13 62)",
+            "700": "oklch(51% .11 58)",
+            "800": "oklch(43% .09 55)",
+            "900": "oklch(37% .075 52)",
+            "950": "oklch(26% .055 50)",
+        },
+    },
+    "SIDEBAR": {
+        "show_search": True,
+        "show_all_applications": False,   # only the clear menu below
+        "navigation": [
+            {
+                "title": "Overview",
+                "items": [
+                    {"title": "Dashboard", "icon": "dashboard", "link": reverse_lazy("admin:index")},
+                ],
+            },
+            {
+                "title": "Quotes & clients",
+                "separator": True,
+                "items": [
+                    _admin_link("Clients", "group", "Clients", "clientinformation"),
+                    _admin_link("Tour requests", "assignment", "Clients", "clientrequestinformation"),
+                    _admin_link("Itineraries", "route", "Itinerary", "itineraryversion"),
+                    _admin_link("Quote prices", "payments", "Itinerary", "itinerarypricingsnapshot"),
+                ],
+            },
+            {
+                "title": "What you sell",
+                "separator": True,
+                "items": [
+                    _admin_link("Destinations", "landscape", "Destinations", "destination"),
+                    _admin_link("Lodges & hotels", "hotel", "Accommodation", "accommodation"),
+                    _admin_link("Activity types", "hiking", "Activities", "activitytype"),
+                    _admin_link("Activity places", "location_on", "Activities", "activitylocation"),
+                    _admin_link("Meal options", "restaurant", "Meal", "mealplan"),
+                ],
+            },
+            {
+                "title": "Companies & people",
+                "separator": True,
+                "items": [
+                    _admin_link("Companies", "apartment", "Users", "company"),
+                    _admin_link("User accounts", "badge", "Users", "customusermodel"),
+                ],
+            },
+            {
+                "title": "Settings",
+                "separator": True,
+                "items": [
+                    _admin_link("Vehicle & transit prices", "directions_car", "Configuration", "configurationdata"),
+                    _admin_link("Quote cover photos", "photo_library", "Configuration", "herosectionimages"),
+                    _admin_link("Email templates", "mail", "Communication", "emailtemplate"),
+                ],
+            },
+            {
+                "title": "Records",
+                "separator": True,
+                "collapsible": True,
+                "items": [
+                    _admin_link("Staff activity log", "history", "ActivityLog", "activitieslogs"),
+                    _admin_link("Sent emails", "outgoing_mail", "Communication", "communicationlog"),
+                ],
+            },
+        ],
+    },
+}
 

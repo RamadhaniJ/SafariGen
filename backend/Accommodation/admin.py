@@ -1,40 +1,114 @@
+import calendar
+
 from django.contrib import admin
-from django.urls import path
+from django.urls import path, reverse
 from django.template.response import TemplateResponse
 from django.http import JsonResponse
 from django.utils.html import format_html
+from unfold.admin import ModelAdmin, StackedInline, TabularInline
+from unfold.decorators import display
 
 from Accommodation.models import (
-    Accommodation, 
-    AccommodationSeason, 
-    AccommodationRoomType, 
-    RoomRate,  
-    AccommodationDescription, 
-    AccommodationImages
+    Accommodation,
+    AccommodationSeason,
+    AccommodationRoomType,
+    RoomRate,
+    AccommodationDescription,
+    AccommodationImages,
 )
 
 
-class AccommodationImagesInline(admin.TabularInline):
-    model = AccommodationImages
-    extra = 1
+def season_dates(obj):
+    """'1 Jun – 31 Oct' instead of raw day/month numbers."""
+    try:
+        return (f"{obj.start_day} {calendar.month_abbr[obj.start_month]} – "
+                f"{obj.end_day} {calendar.month_abbr[obj.end_month]}")
+    except (TypeError, IndexError):
+        return "All year"
 
+
+# ---------------------------------------------------------------- inlines --
+
+class SeasonInline(TabularInline):
+    model = AccommodationSeason
+    extra = 0
+    fields = ["name", "start_day", "start_month", "end_day", "end_month"]
+    verbose_name = "Season"
+    verbose_name_plural = "Seasons (day / month)"
+    tab = True
+
+
+class RoomTypeInline(TabularInline):
+    model = AccommodationRoomType
+    extra = 0
+    fields = ["name", "capacity", "rates_link"]
+    readonly_fields = ["rates_link"]
+    verbose_name_plural = "Room types"
+    tab = True
+
+    @display(description="Prices")
+    def rates_link(self, obj):
+        if not obj.pk:
+            return "Save first"
+        n = obj.rates.count()
+        url = reverse("admin:Accommodation_roomrate_changelist") + f"?room_type__id__exact={obj.pk}"
+        return format_html('<a href="{}" style="font-weight:600">{} price{} →</a>', url, n, "" if n == 1 else "s")
+
+
+class DescriptionInline(StackedInline):
+    model = AccommodationDescription
+    extra = 0
+    verbose_name_plural = "Descriptions (shown to guests)"
+    tab = True
+
+
+class AccommodationImagesInline(TabularInline):
+    model = AccommodationImages
+    extra = 0
+    verbose_name_plural = "Photos"
+    tab = True
+
+
+# ------------------------------------------------------------------ admins --
 
 @admin.register(Accommodation)
-class AdminAccommodation(admin.ModelAdmin):
-    list_display = [
-        "destination", 
-        "name", 
-        "is_sponsored", 
-        "sponsored_priority", 
-        "tag_label", 
-        "bulk_upload_link", 
-        "created_at"
+class AdminAccommodation(ModelAdmin):
+    list_display = ["name", "destination", "type_label", "location_label", "rates_count", "sponsored", "bulk_upload_link"]
+    list_filter = ["tag_label", "park_status", "is_sponsored", "destination"]
+    search_fields = ["name", "destination__name"]
+    list_select_related = ["destination"]
+    inlines = [RoomTypeInline, SeasonInline, DescriptionInline, AccommodationImagesInline]
+    fieldsets = [
+        (None, {"fields": ["name", "destination", "tag_label", "featured_image"]}),
+        ("Location & park fees", {
+            "fields": ["park_status",
+                       ("concession_fee_adult_non_resident", "concession_fee_child_non_resident"),
+                       ("concession_fee_adult_resident", "concession_fee_child_resident")],
+            "description": "Concession fees are charged per person per night when the lodge is inside a park.",
+        }),
+        ("Sponsored listing", {"fields": ["is_sponsored", "sponsored_priority", "sponsored_until"], "classes": ["collapse"]}),
     ]
-    list_filter = ["is_sponsored", "sponsored_priority", "tag_label"]
-    search_fields = ["name"]
-    inlines = [AccommodationImagesInline]
 
-    # 1. Ongeza custom URL kwenye Admin kwa ajili ya Bulk Upload
+    @display(description="Type")
+    def type_label(self, obj):
+        return obj.get_tag_label_display()
+
+    @display(description="Location", label={"Inside Park": "warning", "Outside Park": "info"})
+    def location_label(self, obj):
+        return obj.get_park_status_display()
+
+    @display(description="Room prices")
+    def rates_count(self, obj):
+        n = RoomRate.objects.filter(room_type__accommodation=obj).count()
+        if n == 0:
+            return format_html('<span style="color:#dc2626;font-weight:600">None — adds $0 to quotes</span>')
+        return n
+
+    @display(description="Sponsored", boolean=True)
+    def sponsored(self, obj):
+        return obj.is_sponsored
+
+    # Bulk photo upload page (kept from before)
     def get_urls(self):
         urls = super().get_urls()
         custom_urls = [
@@ -46,74 +120,74 @@ class AdminAccommodation(admin.ModelAdmin):
         ]
         return custom_urls + urls
 
-    # 2. View inayopokea na ku-save picha
-
     def bulk_upload_images_view(self, request, object_id):
         accommodation = self.get_object(request, object_id)
-
         if request.method == 'POST' and request.FILES.get('images'):
-            image_file = request.FILES.get('images')
-            selected_tag = request.POST.get('tag', 'ROOM')
-
-            # Inahifadhi picha moja kwa moja kwenye AccommodationImages model
             AccommodationImages.objects.create(
                 accommodation=accommodation,
-                images=image_file,
-                tag=selected_tag
+                images=request.FILES.get('images'),
+                tag=request.POST.get('tag', 'ROOM'),
             )
-            return JsonResponse({'status': 'success', 'message': 'Picha imehifadhiwa!'})
-
+            return JsonResponse({'status': 'success', 'message': 'Photo saved'})
         context = {
             **self.admin_site.each_context(request),
             'opts': self.model._meta,
             'accommodation': accommodation,
             'tag_choices': AccommodationImages._meta.get_field('tag').choices,
-            'title': f'Bulk Image Upload: {accommodation.name}',
+            'title': f'Upload photos: {accommodation.name}',
         }
         return TemplateResponse(request, "admin/bulk_upload_accommodation.html", context)
 
-
-    
-
-    # 3. Tengeneza Kitufe cha "📸 Upload Images" kwenye Orodha ya Accommodations
+    @display(description="Photos")
     def bulk_upload_link(self, obj):
-        url = f"/admin/Accommodation/accommodation/{obj.id}/bulk-upload-images/"
-        return format_html(
-            '<a class="button" style="background-color: #417690; color: white; padding: 4px 10px; border-radius: 4px; text-decoration: none; font-weight: bold;" href="{}">📸 Upload Images</a>',
-            url
-        )
-    
-    bulk_upload_link.short_description = 'Bulk Upload'
-
-
-@admin.register(AccommodationSeason)
-class AdminAccommodationSeason(admin.ModelAdmin):
-    list_display = ["accommodation", "name", "start_month", "end_month", "created_at"]
-    list_filter = ["created_at"]
-    search_fields = ["name", "accommodation__name"]
-
-
-@admin.register(AccommodationRoomType)
-class AdminAccommodationRoomType(admin.ModelAdmin):
-    list_display = ["accommodation", "name", "capacity", "created_at"]
-    list_filter = ["capacity"]
-    search_fields = ["name", "accommodation__name"]
+        url = reverse("admin:accommodation-bulk-upload-images", args=[obj.pk])
+        return format_html('<a href="{}" style="font-weight:600">Upload photos →</a>', url)
 
 
 @admin.register(RoomRate)
-class AdminAccommodationRoomRate(admin.ModelAdmin):
-    list_display = ["room_type", "season", "meal_plan", "price_per_night", "created_at"]
-    list_filter = ["season"]
-    search_fields = ["room_type__name"]
+class AdminAccommodationRoomRate(ModelAdmin):
+    list_display = ["lodge", "room_type", "season_label", "meal_plan", "price_per_night"]
+    list_editable = ["price_per_night"]
+    list_filter = ["room_type__accommodation", "meal_plan"]
+    search_fields = ["room_type__name", "room_type__accommodation__name"]
+    list_select_related = ["room_type__accommodation", "season"]
+    autocomplete_fields = ["room_type", "season"]
+
+    @display(description="Lodge", ordering="room_type__accommodation__name")
+    def lodge(self, obj):
+        return obj.room_type.accommodation.name
+
+    @display(description="Season")
+    def season_label(self, obj):
+        return f"{obj.season.name} ({season_dates(obj.season)})" if obj.season else "All year"
+
+
+@admin.register(AccommodationSeason)
+class AdminAccommodationSeason(ModelAdmin):
+    list_display = ["accommodation", "name", "dates"]
+    search_fields = ["name", "accommodation__name"]
+    list_filter = ["accommodation"]
+
+    @display(description="Dates")
+    def dates(self, obj):
+        return season_dates(obj)
+
+
+@admin.register(AccommodationRoomType)
+class AdminAccommodationRoomType(ModelAdmin):
+    list_display = ["accommodation", "name", "capacity"]
+    list_filter = ["accommodation"]
+    search_fields = ["name", "accommodation__name"]
 
 
 @admin.register(AccommodationDescription)
-class AdminAccommodationDescription(admin.ModelAdmin):
+class AdminAccommodationDescription(ModelAdmin):
     list_display = ["accommodation", "created_at"]
     search_fields = ["accommodation__name"]
 
 
 @admin.register(AccommodationImages)
-class AdminAccommodationImages(admin.ModelAdmin): # Nimerekebisha jina la Class hapa
+class AdminAccommodationImages(ModelAdmin):
     list_display = ["accommodation", "tag", "created_at"]
+    list_filter = ["tag"]
     search_fields = ["accommodation__name"]

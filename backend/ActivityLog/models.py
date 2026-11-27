@@ -73,6 +73,8 @@ class ActivitiesLogs(models.Model):
  
 
         class Meta:
+             verbose_name = "staff activity"
+             verbose_name_plural = "staff activity log"
              ordering = ['-created_at']
              indexes = [
                   models.Index(fields=["client","-created_at"]),

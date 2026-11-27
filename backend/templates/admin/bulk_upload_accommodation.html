@@ -4,11 +4,11 @@
 <div style="padding: 20px; max-width: 1000px; margin: 0 auto;">
     
     <div style="margin-bottom: 25px;">
-        <a href="{% url 'admin:Accommodation_accommodation_change' accommodation.id %}" class="button" style="background: #417690; color: white; padding: 10px 18px; text-decoration: none; border-radius: 4px; font-weight: bold;">
+        <a href="{% url 'admin:Accommodation_accommodation_change' accommodation.id %}" class="button" style="background: var(--color-primary-600); color: white; padding: 10px 18px; text-decoration: none; border-radius: 4px; font-weight: bold;">
             ← Rudi kwa {{ accommodation.name }}
         </a>
-        <h1 style="margin-top: 20px; font-size: 24px; color: #333;">
-            📸 Bulk Image Upload: <span style="color: #417690;">{{ accommodation.name }}</span>
+        <h1 class="text-font-important-light dark:text-font-important-dark" style="margin-top: 20px; font-size: 24px;">
+            📸 Bulk Image Upload: <span style="color: var(--color-primary-600);">{{ accommodation.name }}</span>
         </h1>
     </div>
 
@@ -23,7 +23,7 @@
     </div>
 
     <!-- Form ya Dropzone -->
-    <form action="{% url 'admin:accommodation-bulk-upload-images' accommodation.id %}" method="post" enctype="multipart/form-data" class="dropzone" id="accommodation-dropzone" style="border: 2px dashed #417690; border-radius: 12px; background: #f8fafc; padding: 40px; text-align: center; cursor: pointer;">
+    <form action="{% url 'admin:accommodation-bulk-upload-images' accommodation.id %}" method="post" enctype="multipart/form-data" class="dropzone" id="accommodation-dropzone" style="border: 2px dashed var(--color-primary-600); border-radius: 12px; background: #f8fafc; padding: 40px; text-align: center; cursor: pointer;">
         {% csrf_token %}
         <div class="dz-message">
             <div style="font-size: 48px; margin-bottom: 10px;">🖼️</div>

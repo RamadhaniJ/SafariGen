@@ -40,6 +40,10 @@ class CustomBaseUserManager(BaseUserManager):
 
 # ==========================================
 class Company(models.Model):
+    class Meta:
+        verbose_name = "company"
+        verbose_name_plural = "companies"
+
     id = models.UUIDField(primary_key=True, editable=False, default=uuid7)
     owner = models.ForeignKey(
          "CustomUserModel",
@@ -127,6 +131,10 @@ class Company(models.Model):
 
 
 class CustomUserModel(AbstractBaseUser, PermissionsMixin):
+     class Meta:
+          verbose_name = "user account"
+          verbose_name_plural = "user accounts"
+
      class UserRoles(models.TextChoices):
           ADMIN = "ADMIN", "Admin"
           MANAGER = "MANAGER", "Manager"
@@ -189,6 +197,10 @@ class CustomUserModel(AbstractBaseUser, PermissionsMixin):
 
 
 class UserEmailOTP(models.Model):
+     class Meta:
+          verbose_name = "email code"
+          verbose_name_plural = "email codes"
+
      id = models.UUIDField(default=uuid7, primary_key=True, editable=False)
      user = models.ForeignKey(CustomUserModel, related_name="email_otps", on_delete=models.CASCADE, blank=True, null=True)
       

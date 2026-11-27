@@ -1,0 +1,101 @@
+{% extends 'admin/base.html' %}
+{% load i18n %}
+
+{% block title %}{% trans "Dashboard" %} | {{ site_title|default:_('Django site admin') }}{% endblock %}
+
+{% block branding %}
+    {% include "unfold/helpers/site_branding.html" %}
+{% endblock %}
+
+{% block content %}
+<style>
+  .sg-grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(210px,1fr))}
+  .sg-card{display:block;border:1px solid var(--color-base-200);border-radius:12px;padding:18px 20px;background:#fff;transition:box-shadow .2s,border-color .2s;text-decoration:none}
+  .sg-card:hover{border-color:var(--color-primary-400);box-shadow:0 8px 24px -12px rgba(0,0,0,.25)}
+  .dark .sg-card{background:var(--color-base-900);border-color:var(--color-base-800)}
+  .sg-icon{display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;border-radius:10px;background:var(--color-primary-100);color:var(--color-primary-700)}
+  .dark .sg-icon{background:color-mix(in oklch,var(--color-primary-500) 20%,transparent);color:var(--color-primary-300)}
+  .sg-value{font-size:28px;font-weight:700;line-height:1.1;margin-top:12px}
+  .sg-label{font-size:13px;font-weight:600;margin-top:4px}
+  .sg-hint{font-size:12px;opacity:.65;margin-top:2px}
+  .sg-section{margin-top:28px}
+  .sg-h{font-size:15px;font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+  .sg-row{display:flex;align-items:center;gap:12px;padding:12px 16px;border-radius:10px;border:1px solid var(--color-base-200);margin-bottom:8px}
+  .dark .sg-row{border-color:var(--color-base-800)}
+  .sg-row.danger{background:color-mix(in oklch,#ef4444 8%,transparent);border-color:color-mix(in oklch,#ef4444 35%,transparent)}
+  .sg-row.warning{background:color-mix(in oklch,#f59e0b 9%,transparent);border-color:color-mix(in oklch,#f59e0b 40%,transparent)}
+  .sg-row.info{background:color-mix(in oklch,#3b82f6 7%,transparent);border-color:color-mix(in oklch,#3b82f6 30%,transparent)}
+  .sg-row .sg-btn{margin-left:auto;white-space:nowrap;font-size:12px;font-weight:600;padding:6px 12px;border-radius:8px;background:var(--color-primary-600);color:#fff;text-decoration:none}
+  .sg-table{width:100%;border-collapse:collapse;font-size:13px}
+  .sg-table th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.06em;opacity:.6;padding:8px 10px;border-bottom:1px solid var(--color-base-200)}
+  .sg-table td{padding:10px;border-bottom:1px solid var(--color-base-100)}
+  .dark .sg-table th,.dark .sg-table td{border-color:var(--color-base-800)}
+  .sg-table a{color:var(--color-primary-700);font-weight:600;text-decoration:none}
+  .dark .sg-table a{color:var(--color-primary-300)}
+  .sg-two{display:grid;gap:24px;grid-template-columns:1fr}
+  @media(min-width:1100px){.sg-two{grid-template-columns:2fr 1fr}}
+  .sg-short{display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:10px;border:1px solid var(--color-base-200);margin-bottom:8px;text-decoration:none;font-weight:600;font-size:13px}
+  .sg-short:hover{border-color:var(--color-primary-400)}
+  .dark .sg-short{border-color:var(--color-base-800)}
+</style>
+
+<div class="text-font-important-light dark:text-font-important-dark">
+  <p style="font-size:22px;font-weight:700">Welcome back{% if request.user.full_name %}, {{ request.user.full_name }}{% endif %}</p>
+  <p class="text-font-subtle-light dark:text-font-subtle-dark" style="margin-top:2px">Everything you manage in SafariGen, in one place. Use the menu on the left.</p>
+
+  <div class="sg-grid sg-section">
+    {% for s in sg_stats %}
+      <a class="sg-card text-font-important-light dark:text-font-important-dark" href="{{ s.url }}">
+        <span class="sg-icon"><span class="material-symbols-outlined">{{ s.icon }}</span></span>
+        <div class="sg-value">{{ s.value }}</div>
+        <div class="sg-label">{{ s.label }}</div>
+        <div class="sg-hint">{{ s.hint }}</div>
+      </a>
+    {% endfor %}
+  </div>
+
+  <div class="sg-section">
+    <p class="sg-h"><span class="material-symbols-outlined">priority_high</span> Needs attention</p>
+    {% for a in sg_attention %}
+      <div class="sg-row {{ a.level }}">
+        <span class="material-symbols-outlined">{% if a.level == "danger" %}error{% elif a.level == "warning" %}warning{% else %}info{% endif %}</span>
+        <span style="font-size:13px">{{ a.text }}</span>
+        <a class="sg-btn" href="{{ a.url }}">{{ a.action }}</a>
+      </div>
+    {% empty %}
+      <div class="sg-row"><span class="material-symbols-outlined">check_circle</span><span style="font-size:13px">All good — nothing needs your attention.</span></div>
+    {% endfor %}
+  </div>
+
+  <div class="sg-two sg-section">
+    <div>
+      <p class="sg-h"><span class="material-symbols-outlined">assignment</span> Latest tour requests</p>
+      <table class="sg-table">
+        <thead><tr><th>Tour</th><th>Client</th><th>Company</th><th>Starts</th><th style="text-align:right">Total</th></tr></thead>
+        <tbody>
+          {% for r in sg_recent %}
+            <tr>
+              <td><a href="{{ r.url }}">{{ r.title }}</a><div class="sg-hint">{{ r.code }}</div></td>
+              <td>{{ r.client }}</td>
+              <td>{{ r.company }}</td>
+              <td>{{ r.start|date:"j M Y" }}</td>
+              <td style="text-align:right">{% if r.total %}${{ r.total|floatformat:"0g" }}{% else %}—{% endif %}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="5" class="sg-hint">No tour requests yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <p class="sg-h"><span class="material-symbols-outlined">bolt</span> Shortcuts</p>
+      {% for s in sg_shortcuts %}
+        <a class="sg-short text-font-important-light dark:text-font-important-dark" href="{{ s.url }}">
+          <span class="sg-icon" style="width:30px;height:30px"><span class="material-symbols-outlined" style="font-size:18px">{{ s.icon }}</span></span>
+          {{ s.label }}
+        </a>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -8,6 +8,10 @@ import uuid
 # Create your models here.
  
 class ClientInformation(models.Model):
+    class Meta:
+        verbose_name = "client"
+        verbose_name_plural = "clients"
+
     id = models.UUIDField(editable=False, primary_key=True, default=uuid7)
 
     company = models.ForeignKey(
@@ -64,6 +68,10 @@ class ClientInformation(models.Model):
 
  
 class ClientRequestInformation(models.Model):
+    class Meta:
+        verbose_name = "tour request"
+        verbose_name_plural = "tour requests"
+
     id = models.UUIDField(
         editable=False, primary_key=True,
         default=uuid7 
@@ -161,6 +169,10 @@ class ClientRequestInformation(models.Model):
 
  
 class Traveller(models.Model):
+    class Meta:
+        verbose_name = "traveller group"
+        verbose_name_plural = "traveller groups"
+
     id = models.UUIDField(editable=False, primary_key=True, default=uuid7)
     request = models.ForeignKey(
                                 ClientRequestInformation,
@@ -194,6 +206,10 @@ class Traveller(models.Model):
 
 
 class RoomSelection(models.Model):
+    class Meta:
+        verbose_name = "requested room"
+        verbose_name_plural = "requested rooms"
+
     id = models.UUIDField(editable=False, primary_key=True, default=uuid7)
     request = models.ForeignKey(
                                     ClientRequestInformation, 
