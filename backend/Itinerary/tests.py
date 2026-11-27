@@ -695,8 +695,8 @@ class VehiclePricePerCompanyTests(PricingTestCase):
 
 
 
-class AutoRepriceOnVehicleRateChangeTests(PricingTestCase):
-    """Changing a company's vehicle price re-prices its open saved quotes."""
+class RepriceTestBase(PricingTestCase):
+    """Shared setup: one company at $250/day, default $150/day."""
 
     def setUp(self):
         super().setUp()
@@ -724,6 +724,11 @@ class AutoRepriceOnVehicleRateChangeTests(PricingTestCase):
         self.company.vehicle_rate_per_day = value
         self.company.save()
         return self.company._repriced
+
+
+
+class AutoRepriceOnVehicleRateChangeTests(RepriceTestBase):
+    """Changing a company's vehicle price re-prices its open saved quotes."""
 
     def test_open_quote_is_repriced_and_keeps_commission(self):
         version, snap = self.quote()
@@ -787,3 +792,49 @@ class AutoRepriceOnVehicleRateChangeTests(PricingTestCase):
         self.set_rate(D("200"))
         self.assertEqual(self.total(version).map_image.name, "safari_maps/route.png")
         self.mock_map.assert_not_called()
+
+
+
+class RepriceWhenQuoteReopenedTests(RepriceTestBase):
+    """A frozen quote that's reopened picks up the company's current vehicle price."""
+
+    def test_accept_change_price_then_reopen(self):
+        # The exact sequence that left a quote at the old price.
+        version, _ = self.quote()
+        version.status = "ACCEPTED"; version.save()
+        self.set_rate(D("150"))                                     # frozen: not re-priced
+        self.assertEqual(self.total(version).total_transport_vehicle, D("1000.00"))
+        for status in ("SENT", "CHANGES_REQUESTED", "DRAFT"):
+            version.status = status; version.save()
+        self.assertEqual(self.total(version).total_transport_vehicle, D("600.00"))   # 150 x 4
+        self.assertEqual(self.total(version).commission_percentage, D("10.00"))
+
+    def test_each_reopening_status_triggers(self):
+        for reopen_as in ("DRAFT", "SENT", "CHANGES_REQUESTED"):
+            with self.subTest(reopen_as=reopen_as):
+                version, _ = self.quote(status="REJECTED")
+                self.set_rate(D(str(100 + _uid())))
+                rate = self.company.vehicle_rate_per_day
+                version.status = reopen_as; version.save()
+                self.assertEqual(version._repriced[0][2], self.total(version).grand_total)
+                self.assertEqual(self.total(version).total_transport_vehicle, rate * 4)
+
+    def test_moving_between_open_statuses_does_not_reprice(self):
+        version, snap = self.quote()
+        version.status = "SENT"; version.save()
+        self.assertEqual(version._repriced, [])
+        self.assertEqual(self.total(version).pk, snap.pk)
+
+    def test_old_version_made_current_again_is_repriced(self):
+        version, _ = self.quote()
+        version.is_current = False; version.save()
+        self.set_rate(D("175"))                                     # not current: not re-priced
+        self.assertEqual(self.total(version).total_transport_vehicle, D("1000.00"))
+        version.is_current = True; version.save()
+        self.assertEqual(self.total(version).total_transport_vehicle, D("700.00"))
+
+    def test_freezing_a_quote_does_not_reprice(self):
+        version, snap = self.quote()
+        version.status = "ACCEPTED"; version.save()
+        self.assertEqual(version._repriced, [])
+        self.assertEqual(self.total(version).pk, snap.pk)

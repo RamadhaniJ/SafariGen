@@ -71,6 +71,13 @@ class AdminItineraryVersion(ModelAdmin):
         }),
     ]
 
+    def save_model(self, request, obj, form, change):
+        super().save_model(request, obj, form, change)
+        for version, old, new in getattr(obj, "_repriced", []):
+            if old is not None and old != new:
+                self.message_user(request, f"Quote reopened and re-priced with current rates: "
+                                           f"${old:,.2f} → ${new:,.2f}", messages.SUCCESS)
+
     @action(description="Recalculate prices with current rates")
     def recalculate_prices(self, request, queryset):
         """Re-run the pricing engine (e.g. after a company changes its vehicle price).

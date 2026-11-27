@@ -45,6 +45,8 @@ automatically, send quotes and generate PDFs.
    Changing a company's vehicle price re-prices its open quotes automatically (signal in
    `Users/signals.py` → `reprice_company_quotes()` in `Itinerary/pricing.py`): current
    versions only, not ACCEPTED/REJECTED/ARCHIVED; commission % and route map are kept.
+   A frozen quote that's reopened (back to DRAFT/SENT/CHANGES_REQUESTED, or made current
+   again) is re-priced at that moment (`Itinerary/signals.py`), so it never keeps a stale rate.
    Other rate changes (default vehicle price, lodge rates, park fees) don't re-price saved
    quotes; use Admin → Itineraries → "Recalculate prices with current rates".
 7. SQLite is the configured database. It should move to PostgreSQL.
