@@ -1,8 +1,8 @@
-from django.contrib import admin
+from django.contrib import admin, messages
 from django.urls import reverse
 from django.utils.html import format_html
 from unfold.admin import ModelAdmin, TabularInline
-from unfold.decorators import display
+from unfold.decorators import action, display
 
 from Itinerary.models import (
     MainDayByDayItinerary,
@@ -58,6 +58,7 @@ class AdminItineraryVersion(ModelAdmin):
     list_select_related = ["client_request", "created_by", "version_pricing_snapshot"]
     inlines = [DayInline]
     readonly_fields = ["guest_page_link", "price_link"]
+    actions = ["recalculate_prices"]
     fieldsets = [
         (None, {"fields": ["client_request", ("version_number", "status", "is_current"), "change_summary"]}),
         ("Links", {"fields": ["guest_page_link", "price_link"]}),
@@ -69,6 +70,29 @@ class AdminItineraryVersion(ModelAdmin):
                        "snapshot_travellers_json", "snapshot_rooms_json", "based_on", "created_by"],
         }),
     ]
+
+    @action(description="Recalculate prices with current rates")
+    def recalculate_prices(self, request, queryset):
+        """Re-run the pricing engine (e.g. after a company changes its vehicle price).
+        Keeps each quote's commission %. The guest sees the new price from now on."""
+        from Itinerary.pricing import calculate_and_save_pricing_snapshot
+
+        changed = []
+        for version in queryset.select_related("client_request", "version_pricing_snapshot"):
+            old = getattr(version, "version_pricing_snapshot", None)
+            old_total = old.grand_total if old else None
+            commission = old.commission_percentage if old else 0
+            new = calculate_and_save_pricing_snapshot(version, commission_percentage=commission,
+                                                      current_user=request.user)
+            new.refresh_from_db()
+            label = f"{version.client_request.tour_code} v{version.version_number}"
+            if old_total is None:
+                changed.append(f"{label}: priced at ${new.grand_total:,.2f}")
+            elif new.grand_total != old_total:
+                changed.append(f"{label}: ${old_total:,.2f} → ${new.grand_total:,.2f}")
+            else:
+                changed.append(f"{label}: unchanged (${new.grand_total:,.2f})")
+        self.message_user(request, "Recalculated: " + "; ".join(changed), messages.SUCCESS)
 
     @display(description="Tour", ordering="client_request__tour_title")
     def tour(self, obj):

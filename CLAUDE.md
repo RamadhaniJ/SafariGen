@@ -42,6 +42,8 @@ automatically, send quotes and generate PDFs.
    `Company.vehicle_rate_per_day`, set in Company → Edit → Pricing or the admin. The
    global `ConfigurationData` row is now only the default for companies without one.
    Its two transit fee fields are unused (transit fees are set per activity).
+   Saved quote prices don't change by themselves when rates change; re-price them with
+   Admin → Itineraries → select → "Recalculate prices with current rates" (keeps commission %).
 7. SQLite is the configured database. It should move to PostgreSQL.
 8. About 530 lines of commented-out old engine at the top of `Itinerary/pricing.py`,
    plus stray files: `Itinerary/testonly.py`, `Itinerary/test.py`,
