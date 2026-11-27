@@ -11,10 +11,13 @@ from Itinerary.view_itinerary_edit import (
                                            SaveEditedItineraryView 
                                            )
 from Itinerary.pdf_view import generate_safari_pdf
+from Itinerary.price_preview import ItineraryPricePreviewView
 from Itinerary.pricing_pdf import generate_pricing_pdf
 
 urlpatterns = [
     path("bulk/create/daybyday/", BulkCreateDayByDayItineraryView.as_view(), name="create_day_by_day"),
+    # Live price while building/editing (same engine as saving; writes nothing)
+    path("price-preview/", ItineraryPricePreviewView.as_view(), name="itinerary_price_preview"),
 
     path("preview/client/safari/data/<uuid:client_id>/<uuid:version_id>/", PreviewClientSafariItineraryView.as_view(), name="preview_client_safari_day_by_day"),
 

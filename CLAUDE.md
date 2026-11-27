@@ -26,13 +26,13 @@ automatically, send quotes and generate PDFs.
    Note: `backend/urls.py` only serves `/media/` while DEBUG is on, so media
    needs another way to be served in production before DEBUG goes off.
 2. There were no automated tests. Pricing tests now live in `backend/Itinerary/tests.py`.
-3. Pricing is calculated in several places that must "match": the backend
-   engine (`Itinerary/pricing.py`), the frontend hook
-   (`frontend/src/GlobalShare/Itinerary/Hooks/useItineraryPrice.js`) and
-   per-request helpers in `Destinations/Serializer.py`
-   (`calculated_park_fee`, `calculated_rescue_fee`) and
-   `Accommodation/Serializer.py` (`calculated_concesion_fee`,
-   `available_room_rates`). **The backend engine should be the single source of truth.**
+3. ~~Pricing calculated in several places.~~ Fixed on branch `fix/single-pricing-source`:
+   `compute_pricing()` in `Itinerary/pricing.py` is the only calculation. Saving uses it, and
+   the builder/edit screens call `POST /api/itinerary/price-preview/` (`Itinerary/price_preview.py`),
+   which runs the same function without saving. `useItineraryPrice.js` no longer calculates;
+   it sends the days (built by `Helpers/buildDaysPayload.js`) and shows the result.
+   The per-destination/lodge fee hints in the pickers (`calculated_park_fee`,
+   `calculated_concesion_fee`) are still estimates by tour start date; totals don't use them.
 4. Silent wrong prices: with no matching season, `_get_room_rate` falls back to
    any rate. With no vehicle price, a hard-coded $250/day is used (also in
    `Clients/Serializer.py` and the frontend hook).
@@ -194,10 +194,9 @@ Called when an itinerary is created (`Itinerary/Serializer.py`) or edited
    are only printed), and copy grand total and per-person price onto the
    `ClientRequestInformation`.
 
-The frontend hook `useItineraryPrice.js` repeats steps 1, 3, 4 and 5 in the browser
-with floats, using per-request fee totals from the Destination and Accommodation
-serializers, which pick the season by the **tour start date** rather than each
-day's date. That's why the numbers can drift (issue 3).
+While a quote is being built or edited, the screen gets its live price from
+`/api/itinerary/price-preview/`, which runs this same calculation (`compute_pricing()`)
+without saving, so the live price always equals the saved price.
 
 ## Running locally
 
@@ -267,7 +266,7 @@ Deploying it: `pip install -r requirements.txt`, `python manage.py migrate`, the
 
 ```bash
 cd backend
-.venv/bin/python manage.py test backend Users Itinerary.tests Itinerary.tests_pdf_cache
+.venv/bin/python manage.py test backend Users Itinerary.tests Itinerary.tests_pdf_cache Itinerary.tests_price_preview
 ```
 
 `Itinerary/tests.py` pins down today's pricing results, including the known-bad
@@ -276,5 +275,5 @@ the affected test in the same change and say why. Tests mock the Mapbox call.
 
 GitHub Actions (`.github/workflows/tests.yml`) runs on every pull request and every push
 to `main`: Django check, missing-migration check, `manage.py test backend
-Users Itinerary.tests Itinerary.tests_pdf_cache`, and a frontend `npm ci && npm run build`. When adding test
+Users Itinerary.tests Itinerary.tests_pdf_cache Itinerary.tests_price_preview`, and a frontend `npm ci && npm run build`. When adding test
 modules, add them to that command until the stray test files are removed.
