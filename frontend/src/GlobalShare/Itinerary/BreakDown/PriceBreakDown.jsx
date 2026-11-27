@@ -413,6 +413,7 @@ const PRESET_COMMISSIONS = ["0", "10", "15", "20", "25", "30", "custom"];
 export default function SmartPricingBreakdownGlobal({
   dayConfigs,
   clientInfo,
+  pricing: pricingFromParent,
   officeCommission,
   setOfficeCommission,
   customCommission,
@@ -420,7 +421,6 @@ export default function SmartPricingBreakdownGlobal({
   onClose,
 }) {
   const [showDetailedBreakdown, setShowDetailedBreakdown] = useState(false);
-  const pricing = useItineraryPricingGlobal(dayConfigs, clientInfo);
 
   // Close modal on ESC key
   useEffect(() => {
@@ -431,16 +431,18 @@ export default function SmartPricingBreakdownGlobal({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [onClose]);
 
-  // Safe commission calculations
   const commissionPercentage =
     officeCommission === "custom"
       ? parseFloat(customCommission) || 0
       : parseFloat(officeCommission) || 0;
 
-  const commissionAmount = (pricing.subtotal * commissionPercentage) / 100;
-  const grandTotal = pricing.subtotal + commissionAmount;
-  const perPerson =
-    pricing.totalTravellers > 0 ? grandTotal / pricing.totalTravellers : 0;
+  // Prices come from the backend pricing engine (same calculation as Save).
+  // The parent screen passes its live price; otherwise ask the backend here.
+  const ownPricing = useItineraryPricingGlobal(
+    pricingFromParent ? null : dayConfigs, clientInfo, commissionPercentage
+  );
+  const pricing = pricingFromParent || ownPricing;
+  const { commissionAmount, grandTotal, perPerson } = pricing;
 
   const handleSaveAndClose = () => {
     if (onClose) onClose();
@@ -473,7 +475,11 @@ export default function SmartPricingBreakdownGlobal({
                 Pricing Calculator
               </h2>
               <p className="mt-0.5 text-[11px] leading-snug text-[#6B6459] sm:text-xs">
-                Dynamic price modeling, park taxes &amp; margin optimization
+                {pricing.error
+                  ? pricing.error
+                  : pricing.isCalculating
+                    ? "Updating price…"
+                    : "Live price from SafariGen's pricing engine: the same amount that will be saved"}
               </p>
             </div>
           </div>

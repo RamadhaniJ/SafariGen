@@ -48,14 +48,13 @@ export default function ItineraryMainGlobal() {
   const [officeCommission, setOfficeCommission] = useState("0");
   const [customCommission, setCustomCommission] = useState("");
 
-    const pricing = useItineraryPricingGlobal(dayConfigs, clientInfo);
-      const commissionPercentage = officeCommission === "custom" 
-    ? parseFloat(customCommission) || 0 
+  const commissionPercentage = officeCommission === "custom"
+    ? parseFloat(customCommission) || 0
     : parseFloat(officeCommission) || 0;
 
-  const commissionAmount = (pricing.subtotal * commissionPercentage) / 100;
-  const grandTotal = pricing.subtotal + commissionAmount;
-  const perPerson = pricing.totalTravellers > 0 ? grandTotal / pricing.totalTravellers : 0;
+  // Live price from the backend pricing engine (same calculation as Save).
+  const pricing = useItineraryPricingGlobal(dayConfigs, clientInfo, commissionPercentage, clientId);
+  const { commissionAmount, grandTotal, perPerson } = pricing;
   // ==========================================
   // 1. FETCH INITIAL CLIENT DATA
   // ==========================================
@@ -964,6 +963,7 @@ return (
         <SmartPricingBreakdownGlobal
           dayConfigs={dayConfigs}
           clientInfo={clientInfo}
+          pricing={pricing}
           officeCommission={officeCommission}
           setOfficeCommission={setOfficeCommission}
           customCommission={customCommission}

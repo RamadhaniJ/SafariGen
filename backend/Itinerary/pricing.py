@@ -533,6 +533,7 @@
 
 
 import math
+from dataclasses import dataclass, field
 from datetime import timedelta
 from decimal import Decimal
 from django.db import transaction
@@ -566,12 +567,12 @@ SORT_ORDER_MAP = {
 # HELPERS (badilisha zote kutumia per-traveller)
 # ==========================================
 
-def _get_traveller_totals(client_request):
+def _get_traveller_totals(travellers):
     """Return (total, adults, children) — INFANT excluded."""
     total = 0
     adults = 0
     children = 0
-    for t in client_request.travellers.all():
+    for t in travellers:
         if t.age_category == "INFANT":
             continue
         n = getattr(t, "number", 1) or 1
@@ -725,20 +726,68 @@ def _compute_transit_line_total(act, total_travellers, vehicles_needed):
 # MAIN ENGINE
 # ==========================================
 
-def calculate_and_save_pricing_snapshot(itinerary_version, commission_percentage=0, current_user=None,
-                                        regenerate_map=True):
-    """
-    Price an itinerary version and save the snapshot (replacing any previous one).
+@dataclass
+class PricingDay:
+    """One itinerary row as the engine sees it (from the database or a draft)."""
+    day_number: int
+    nights_number: int
+    destination: object = None
+    accommodation: object = None
+    rooms: list = field(default_factory=list)        # objects with .room_type, .quantity
+    activities: list = field(default_factory=list)   # Activity-like objects
+    meals: list = field(default_factory=list)        # OptionalMeal-like objects
 
-    regenerate_map=False is for re-pricing an unchanged itinerary (e.g. after a rate
-    change): the previous route map image is kept instead of calling Mapbox again.
-    """
+    @classmethod
+    def from_model(cls, day):
+        return cls(
+            day_number=day.day_number,
+            nights_number=day.nights_number,
+            destination=day.destination,
+            accommodation=day.accommodation,
+            rooms=list(day.selected_rooms.all()),
+            activities=list(day.day_activities.all()),
+            meals=list(day.day_optionals_meal.all()),
+        )
 
-    client_request = itinerary_version.client_request
+
+@dataclass
+class PricingResult:
+    total_travellers: int
+    vehicles_needed: int
+    total_tour_days: int
+    vehicle_daily_rate: Decimal
+    vehicle_rate_source: str
+    sum_accommodation: Decimal
+    sum_park_fees: Decimal
+    sum_concession: Decimal
+    vehicle_total: Decimal
+    sum_activities: Decimal
+    sum_meals: Decimal
+    subtotal_net: Decimal
+    commission_pct: Decimal
+    commission_amount: Decimal
+    grand_total: Decimal
+    price_per_person: Decimal
+    breakdown_items: list
+
+
+def compute_pricing(client_request, days, travellers, tour_start_date, commission_percentage=0):
+    """
+    THE price calculation. Reads rates from the database, writes nothing.
+
+    Used both when a quote is saved (calculate_and_save_pricing_snapshot) and for the
+    live price while a quote is being built (price preview endpoint), so the two always
+    give the same number.
+
+    client_request: for the guest's country (residency) and company (vehicle price)
+    days: list of PricingDay
+    travellers: objects with .age_category, .number, .is_resident
+    """
     commission_pct = Decimal(str(commission_percentage or 0))
-    tour_start_date = client_request.tour_start_date
+    travellers = list(travellers)
+    days = sorted(days, key=lambda d: d.day_number)
 
-    total_travellers, total_adults, total_children = _get_traveller_totals(client_request)
+    total_travellers, total_adults, total_children = _get_traveller_totals(travellers)
     vehicles_needed = _get_vehicles_needed(total_travellers)
 
     # Totals (per-traveller-aware)
@@ -748,17 +797,6 @@ def calculate_and_save_pricing_snapshot(itinerary_version, commission_percentage
     sum_activities = Decimal("0.00")
     sum_meals = Decimal("0.00")
     breakdown_items = []
-
-    # Fetch days
-    days = MainDayByDayItinerary.objects.filter(
-        version=itinerary_version
-    ).select_related(
-        "destination", "accommodation"
-    ).prefetch_related(
-        "selected_rooms__room_type",
-        "day_activities",
-        "day_optionals_meal",
-    ).order_by("day_number")
 
     # Total tour days (for vehicle)
     total_tour_days = 0
@@ -772,7 +810,7 @@ def calculate_and_save_pricing_snapshot(itinerary_version, commission_percentage
                          "EAC_MEMBER": {"adults": 0, "children": 0, "travellers": []},
                          "NON_RESIDENT": {"adults": 0, "children": 0, "travellers": []}}
 
-    for t in client_request.travellers.all():
+    for t in travellers:
         if t.age_category == "INFANT":
             continue
         n = getattr(t, "number", 1) or 1
@@ -800,7 +838,7 @@ def calculate_and_save_pricing_snapshot(itinerary_version, commission_percentage
             acc_season = _determine_accommodation_season(accommodation, day_date)
             season_name = acc_season.name if acc_season else "All Year"
 
-            for sr in day.selected_rooms.all():
+            for sr in day.rooms:
                 rate_obj = _get_room_rate(sr.room_type, acc_season)
                 if not rate_obj:
                     continue
@@ -932,7 +970,7 @@ def calculate_and_save_pricing_snapshot(itinerary_version, commission_percentage
                         })
 
         # --- D. ACTIVITIES ---
-        for act in day.day_activities.all():
+        for act in day.activities:
             act_title = act.activity_type.title if act.activity_type else "Activity"
 
             # Optional activity — WITH price_per multiplier
@@ -974,7 +1012,7 @@ def calculate_and_save_pricing_snapshot(itinerary_version, commission_percentage
                     })
 
         # --- E. OPTIONAL MEALS ---
-        for meal in day.day_optionals_meal.all():
+        for meal in day.meals:
             if not (meal.is_optional and meal.price):
                 continue
             meal_price = Decimal(str(meal.price))
@@ -996,7 +1034,7 @@ def calculate_and_save_pricing_snapshot(itinerary_version, commission_percentage
     # ==========================================
     # VEHICLE (all days)
     # ==========================================
-    daily_rate = _get_vehicle_daily_rate(client_request)   # ← same source as frontend
+    daily_rate, rate_source = vehicle_daily_rate_for(client_request)
     vehicle_total = (
         Decimal(str(vehicles_needed))
         * Decimal(str(total_tour_days))
@@ -1028,6 +1066,59 @@ def calculate_and_save_pricing_snapshot(itinerary_version, commission_percentage
         (grand_total / Decimal(str(total_travellers)))
         if total_travellers > 0 else Decimal("0.00")
     )
+
+
+    return PricingResult(
+        total_travellers=total_travellers,
+        vehicles_needed=vehicles_needed,
+        total_tour_days=total_tour_days,
+        vehicle_daily_rate=daily_rate,
+        vehicle_rate_source=rate_source,
+        sum_accommodation=sum_accommodation,
+        sum_park_fees=sum_park_fees,
+        sum_concession=sum_concession,
+        vehicle_total=vehicle_total,
+        sum_activities=sum_activities,
+        sum_meals=sum_meals,
+        subtotal_net=subtotal_net,
+        commission_pct=commission_pct,
+        commission_amount=commission_amount,
+        grand_total=grand_total,
+        price_per_person=price_per_person,
+        breakdown_items=breakdown_items,
+    )
+
+
+def calculate_and_save_pricing_snapshot(itinerary_version, commission_percentage=0, current_user=None,
+                                        regenerate_map=True):
+    """
+    Price an itinerary version and save the snapshot (replacing any previous one).
+
+    regenerate_map=False is for re-pricing an unchanged itinerary (e.g. after a rate
+    change): the previous route map image is kept instead of calling Mapbox again.
+    """
+    client_request = itinerary_version.client_request
+    db_days = MainDayByDayItinerary.objects.filter(
+        version=itinerary_version
+    ).select_related(
+        "destination", "accommodation"
+    ).prefetch_related(
+        "selected_rooms__room_type",
+        "day_activities__activity_type",
+        "day_optionals_meal__meal",
+    ).order_by("day_number")
+
+    r = compute_pricing(
+        client_request,
+        [PricingDay.from_model(d) for d in db_days],
+        client_request.travellers.all(),
+        client_request.tour_start_date,
+        commission_percentage,
+    )
+    sum_accommodation, sum_park_fees, sum_concession = r.sum_accommodation, r.sum_park_fees, r.sum_concession
+    vehicle_total, sum_activities, sum_meals = r.vehicle_total, r.sum_activities, r.sum_meals
+    subtotal_net, commission_pct, commission_amount = r.subtotal_net, r.commission_pct, r.commission_amount
+    grand_total, price_per_person, breakdown_items = r.grand_total, r.price_per_person, r.breakdown_items
 
     # ==========================================
     # SAVE (atomic)
