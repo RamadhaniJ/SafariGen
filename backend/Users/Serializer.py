@@ -65,6 +65,16 @@ class RegistrationSerializer(serializers.ModelSerializer):
 #+=====================================COMPANIES ==============================
 
 class CompanyOnboardingSerializer(serializers.ModelSerializer):
+       repriced_quotes = serializers.SerializerMethodField()
+
+       def get_repriced_quotes(self, obj):
+              """Open quotes re-priced by this save (vehicle price changed)."""
+              return [
+                     {"tour_code": v.client_request.tour_code,
+                      "old_total": str(old) if old is not None else None, "new_total": str(new)}
+                     for v, old, new in getattr(obj, "_repriced", [])
+              ]
+
        class Meta:
               model  = Company  
               fields = (
@@ -82,7 +92,8 @@ class CompanyOnboardingSerializer(serializers.ModelSerializer):
                      "certificate_of_incorporation","tax_id_certificate","tax_id_number",
 
  
-                     "status","created_at"
+                     "status","created_at",
+                     "repriced_quotes",
               )
 
               read_only_fields = ("created_at","status", "id")

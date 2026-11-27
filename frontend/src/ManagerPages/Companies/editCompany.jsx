@@ -271,11 +271,16 @@ export default function ManagerEditCompanyPoUp({
         formData.append("certificate_of_incorporation", certIncorporation);
       if (taxCertificate) formData.append("tax_id_certificate", taxCertificate);
 
-      await api.patch(`account/users/update/company/${company.id}/`, formData, {
+      const res = await api.patch(`account/users/update/company/${company.id}/`, formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
-      toast.success("Company updated successfully!");
+      const repriced = res?.data?.repriced_quotes || [];
+      toast.success(
+        repriced.length
+          ? `Company updated. ${repriced.length} open quote${repriced.length > 1 ? "s were" : " was"} re-priced with the new vehicle price.`
+          : "Company updated successfully!"
+      );
       onSuccess?.(); // 🔑 refresh parent list
     } catch (error) {
       let apiMessage = "Update failed. Please try again.";
@@ -579,7 +584,8 @@ export default function ManagerEditCompanyPoUp({
               </div>
             </Field>
             <p className="text-xs text-[#6B6459]">
-              Changing this updates quotes the next time they are saved; quotes already sent keep their price.
+              Changing this re-prices your open quotes straight away (drafts, sent, and changes requested).
+              Accepted, rejected and archived quotes keep their price.
             </p>
           </div>
 

@@ -692,3 +692,98 @@ class VehiclePricePerCompanyTests(PricingTestCase):
         self.assertEqual(S(req).data["vehicle_rent_pricing"], {"vehicle_rent_pricing": 320.0, "source": "company"})
         _, req2 = self._quote_for(None)
         self.assertEqual(S(req2).data["vehicle_rent_pricing"], {"vehicle_rent_pricing": 200.0, "source": "default"})
+
+
+
+class AutoRepriceOnVehicleRateChangeTests(PricingTestCase):
+    """Changing a company's vehicle price re-prices its open saved quotes."""
+
+    def setUp(self):
+        super().setUp()
+        from Users.models import Company, CustomUserModel
+        owner = CustomUserModel.objects.create_user(email=f"o{_uid()}@x.test", password="x-Strong-pass-1", full_name="O")
+        self.company = Company.objects.create(owner=owner, name=f"Co {_uid()}", vehicle_rate_per_day=D("250"))
+        ConfigurationData.objects.create(vehicle_rent_pricing=D("150"))
+
+    def quote(self, status="DRAFT", company=None, commission=10):
+        req = make_client_request(travellers=[("ADULT", 2, False)])
+        req.client_requested.company = company or self.company
+        req.client_requested.save()
+        version = make_version(req)
+        version.status = status
+        version.save()
+        make_day(version, 1, 4)                     # 4 days, 1 vehicle
+        snap = self.price(version, commission)
+        return version, snap
+
+    def total(self, version):
+        from Itinerary.models import ItineraryPricingSnapshot
+        return ItineraryPricingSnapshot.objects.get(version=version)
+
+    def set_rate(self, value):
+        self.company.vehicle_rate_per_day = value
+        self.company.save()
+        return self.company._repriced
+
+    def test_open_quote_is_repriced_and_keeps_commission(self):
+        version, snap = self.quote()
+        self.assertEqual(snap.grand_total, D("1100.00"))            # 250 x 4 + 10%
+        repriced = self.set_rate(D("200"))
+        new = self.total(version)
+        self.assertEqual(new.total_transport_vehicle, D("800.00"))
+        self.assertEqual(new.grand_total, D("880.00"))
+        self.assertEqual(new.commission_percentage, D("10.00"))
+        self.assertEqual([(v.pk, old, n) for v, old, n in repriced], [(version.pk, D("1100.00"), D("880.00"))])
+        version.client_request.refresh_from_db()
+        self.assertEqual(version.client_request.safari_grand_total, D("880.00"))
+
+    def test_sent_and_changes_requested_quotes_are_repriced(self):
+        sent, _ = self.quote(status="SENT")
+        changes, _ = self.quote(status="CHANGES_REQUESTED")
+        self.set_rate(D("200"))
+        self.assertEqual(self.total(sent).total_transport_vehicle, D("800.00"))
+        self.assertEqual(self.total(changes).total_transport_vehicle, D("800.00"))
+
+    def test_accepted_rejected_archived_quotes_keep_their_price(self):
+        for status in ("ACCEPTED", "REJECTED", "ARCHIVED"):
+            with self.subTest(status=status):
+                version, _ = self.quote(status=status)
+                self.set_rate(D(str(100 + _uid())))
+                self.assertEqual(self.total(version).total_transport_vehicle, D("1000.00"))
+                self.company.vehicle_rate_per_day = D("250")
+                self.company.save()
+
+    def test_old_versions_keep_their_price(self):
+        version, _ = self.quote()
+        version.is_current = False
+        version.save()
+        self.set_rate(D("200"))
+        self.assertEqual(self.total(version).total_transport_vehicle, D("1000.00"))
+
+    def test_other_companies_are_not_touched(self):
+        from Users.models import Company
+        other = Company.objects.create(owner=self.company.owner, name="Other", vehicle_rate_per_day=D("300"))
+        version, _ = self.quote(company=other)
+        self.set_rate(D("200"))
+        self.assertEqual(self.total(version).total_transport_vehicle, D("1200.00"))
+
+    def test_clearing_the_price_falls_back_to_the_default(self):
+        version, _ = self.quote()
+        self.set_rate(None)
+        self.assertEqual(self.total(version).total_transport_vehicle, D("600.00"))   # default 150 x 4
+
+    def test_saving_without_changing_the_price_does_nothing(self):
+        version, snap = self.quote()
+        self.company.address = "New office"
+        self.company.save()
+        self.assertEqual(self.company._repriced, [])
+        self.assertEqual(self.total(version).pk, snap.pk)            # same snapshot, not rebuilt
+
+    def test_route_map_is_kept_and_mapbox_not_called_again(self):
+        version, snap = self.quote()
+        snap.map_image.name = "safari_maps/route.png"
+        snap.save()
+        self.mock_map.reset_mock()
+        self.set_rate(D("200"))
+        self.assertEqual(self.total(version).map_image.name, "safari_maps/route.png")
+        self.mock_map.assert_not_called()

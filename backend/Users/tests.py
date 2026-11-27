@@ -122,6 +122,11 @@ class EditCompanyTests(TestCase):
         self.company.refresh_from_db()
         self.assertIsNone(self.company.vehicle_rate_per_day)
 
+    def test_response_lists_repriced_quotes(self):
+        r = self.edit(vehicle_rate_per_day="190")
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.json()["repriced_quotes"], [])   # no quotes for this company yet
+
     def test_negative_vehicle_price_rejected(self):
         r = self.edit(vehicle_rate_per_day="-5")
         self.assertEqual(r.status_code, 400)

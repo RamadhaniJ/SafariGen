@@ -78,12 +78,15 @@ class AdminPagesTests(TestCase):
 class RecalculatePricesActionTests(TestCase):
     """Admin action that re-prices saved quotes after rates change."""
 
-    def test_recalculate_uses_the_companys_current_vehicle_price(self):
+    def test_recalculate_after_the_default_vehicle_price_changes(self):
+        # Company prices re-price automatically; the default price doesn't, so this
+        # action is how quotes of companies without their own price get updated.
         from decimal import Decimal
         from unittest.mock import patch
         from Itinerary.models import ItineraryVersion, MainDayByDayItinerary
         from Itinerary.pricing import calculate_and_save_pricing_snapshot
         from Clients.models import Traveller
+        from Configuration.models import ConfigurationData
 
         admin_user = CustomUserModel.objects.create_superuser(email="a@t.local", password="x-Strong-pass-123", full_name="A")
         company = Company.objects.create(owner=admin_user, name="Co", email="co@x.test")
@@ -94,13 +97,14 @@ class RecalculatePricesActionTests(TestCase):
         version = ItineraryVersion.objects.create(client_request=req, version_number=1)
         MainDayByDayItinerary.objects.create(version=version, day_number=1, nights_number=4)
 
+        config = ConfigurationData.objects.create(vehicle_rent_pricing=Decimal("250"))
         with patch("Itinerary.pricing.generate_and_save_safari_map"):
             calculate_and_save_pricing_snapshot(version, commission_percentage=10)   # $250 x 4 = 1000 + 10%
             version.refresh_from_db()
             self.assertEqual(version.version_pricing_snapshot.grand_total, Decimal("1100.00"))
 
-            company.vehicle_rate_per_day = Decimal("200")
-            company.save()
+            config.vehicle_rent_pricing = Decimal("200")
+            config.save()
 
             self.client.force_login(admin_user)
             r = self.client.post(reverse("admin:Itinerary_itineraryversion_changelist"),

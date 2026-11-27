@@ -725,7 +725,14 @@ def _compute_transit_line_total(act, total_travellers, vehicles_needed):
 # MAIN ENGINE
 # ==========================================
 
-def calculate_and_save_pricing_snapshot(itinerary_version, commission_percentage=0, current_user=None):
+def calculate_and_save_pricing_snapshot(itinerary_version, commission_percentage=0, current_user=None,
+                                        regenerate_map=True):
+    """
+    Price an itinerary version and save the snapshot (replacing any previous one).
+
+    regenerate_map=False is for re-pricing an unchanged itinerary (e.g. after a rate
+    change): the previous route map image is kept instead of calling Mapbox again.
+    """
 
     client_request = itinerary_version.client_request
     commission_pct = Decimal(str(commission_percentage or 0))
@@ -1026,6 +1033,8 @@ def calculate_and_save_pricing_snapshot(itinerary_version, commission_percentage
     # SAVE (atomic)
     # ==========================================
     with transaction.atomic():
+        previous = ItineraryPricingSnapshot.objects.filter(version=itinerary_version).first()
+        kept_map = (previous.map_image.name, previous.map_generated_at) if (previous and not regenerate_map) else None
         ItineraryPricingSnapshot.objects.filter(version=itinerary_version).delete()
 
         snapshot = ItineraryPricingSnapshot.objects.create(
@@ -1050,18 +1059,66 @@ def calculate_and_save_pricing_snapshot(itinerary_version, commission_percentage
                 for item in breakdown_items
             ])
 
-        day_queryset = MainDayByDayItinerary.objects.filter(
-            version=itinerary_version
-        ).select_related("destination").order_by("day_number")
+        if kept_map is not None:
+            if kept_map[0]:
+                snapshot.map_image.name, snapshot.map_generated_at = kept_map
+                snapshot.save(update_fields=["map_image", "map_generated_at"])
+        else:
+            day_queryset = MainDayByDayItinerary.objects.filter(
+                version=itinerary_version
+            ).select_related("destination").order_by("day_number")
 
-        try:
-            generate_and_save_safari_map(snapshot=snapshot, days_queryset=day_queryset)
-        except Exception as e:
-            print(f"⚠️ Map generation failed: {e}")
+            try:
+                generate_and_save_safari_map(snapshot=snapshot, days_queryset=day_queryset)
+            except Exception as e:
+                print(f"⚠️ Map generation failed: {e}")
 
         client_request.safari_grand_total = grand_total
         client_request.price_per_personal = price_per_person
         client_request.save(update_fields=["safari_grand_total", "price_per_personal"])
 
     return snapshot
+
+
+# ==========================================
+# RE-PRICING SAVED QUOTES AFTER A RATE CHANGE
+# ==========================================
+
+# Quotes in these states keep their price: the guest accepted it, or it's history.
+FROZEN_STATUSES = ("ACCEPTED", "REJECTED", "ARCHIVED")
+
+
+def reprice_versions(versions, current_user=None):
+    """
+    Re-price saved quotes with today's rates. Keeps each quote's commission % and
+    route map. Returns [(version, old_total, new_total)].
+    """
+    results = []
+    for version in versions:
+        old = ItineraryPricingSnapshot.objects.filter(version=version).first()
+        old_total = old.grand_total if old else None
+        commission = old.commission_percentage if old else 0
+        user = current_user or (old.generated_by if old else None)
+        new = calculate_and_save_pricing_snapshot(
+            version, commission_percentage=commission, current_user=user, regenerate_map=False,
+        )
+        new.refresh_from_db()
+        results.append((version, old_total, new.grand_total))
+    return results
+
+
+def reprice_company_quotes(company, current_user=None):
+    """
+    Re-price a company's open quotes after its vehicle price changes.
+    Only the current version of each request, and not accepted/rejected/archived ones.
+    """
+    from Itinerary.models import ItineraryVersion
+
+    versions = (
+        ItineraryVersion.objects
+        .filter(client_request__client_requested__company=company, is_current=True)
+        .exclude(status__in=FROZEN_STATUSES)
+        .select_related("client_request__client_requested__company")
+    )
+    return reprice_versions(versions, current_user=current_user)
 

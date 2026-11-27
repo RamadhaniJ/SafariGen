@@ -75,23 +75,18 @@ class AdminItineraryVersion(ModelAdmin):
     def recalculate_prices(self, request, queryset):
         """Re-run the pricing engine (e.g. after a company changes its vehicle price).
         Keeps each quote's commission %. The guest sees the new price from now on."""
-        from Itinerary.pricing import calculate_and_save_pricing_snapshot
+        from Itinerary.pricing import reprice_versions
 
         changed = []
-        for version in queryset.select_related("client_request", "version_pricing_snapshot"):
-            old = getattr(version, "version_pricing_snapshot", None)
-            old_total = old.grand_total if old else None
-            commission = old.commission_percentage if old else 0
-            new = calculate_and_save_pricing_snapshot(version, commission_percentage=commission,
-                                                      current_user=request.user)
-            new.refresh_from_db()
+        for version, old_total, new_total in reprice_versions(
+                queryset.select_related("client_request"), current_user=request.user):
             label = f"{version.client_request.tour_code} v{version.version_number}"
             if old_total is None:
-                changed.append(f"{label}: priced at ${new.grand_total:,.2f}")
-            elif new.grand_total != old_total:
-                changed.append(f"{label}: ${old_total:,.2f} → ${new.grand_total:,.2f}")
+                changed.append(f"{label}: priced at ${new_total:,.2f}")
+            elif new_total != old_total:
+                changed.append(f"{label}: ${old_total:,.2f} → ${new_total:,.2f}")
             else:
-                changed.append(f"{label}: unchanged (${new.grand_total:,.2f})")
+                changed.append(f"{label}: unchanged (${new_total:,.2f})")
         self.message_user(request, "Recalculated: " + "; ".join(changed), messages.SUCCESS)
 
     @display(description="Tour", ordering="client_request__tour_title")
