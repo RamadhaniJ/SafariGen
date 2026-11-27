@@ -644,24 +644,35 @@ def _format_date_display(start_date, day_number, nights):
     return f"{day_date.strftime('%d %b')} - {end_date.strftime('%d %b %Y')}"
 
 
+DEFAULT_VEHICLE_RATE = Decimal("250.00")
+
+
+def vehicle_daily_rate_for(client_request=None):
+    """
+    Price of one safari vehicle per day for this tour request, and where it came from.
+
+    1. The tour company's own price (Company.vehicle_rate_per_day), if set.
+    2. Otherwise the SafariGen-wide default (first ConfigurationData row).
+    3. Otherwise $250 (see review issue 4: this fallback is silent).
+
+    Used by the pricing engine AND the live price preview, so they always agree.
+    Returns (Decimal rate, source) with source "company", "default" or "fallback".
+    """
+    company = None
+    if client_request is not None:
+        client = getattr(client_request, "client_requested", None)
+        company = getattr(client, "company", None) if client else None
+    if company is not None and company.vehicle_rate_per_day is not None:
+        return Decimal(str(company.vehicle_rate_per_day)), "company"
+
+    config = ConfigurationData.objects.first()
+    if config and config.vehicle_rent_pricing:
+        return Decimal(str(config.vehicle_rent_pricing)), "default"
+    return DEFAULT_VEHICLE_RATE, "fallback"
+
+
 def _get_vehicle_daily_rate(client_request=None):
-    """
-    Tumia SAME source ya frontend:
-      1. client_request.vehicle_rent_pricing (kama ipo per-client)
-      2. ConfigurationData fallback
-    """
-    # Kama client ana vehicle_rent_pricing specific — itumie (kama frontend)
-    if client_request and hasattr(client_request, "vehicle_rent_pricing"):
-        per_client = getattr(client_request.vehicle_rent_pricing, "vehicle_rent_pricing", None)
-        if per_client:
-            return Decimal(str(per_client))
-    try:
-        config = ConfigurationData.objects.first()
-        if config and config.vehicle_rent_pricing:
-            return Decimal(str(config.vehicle_rent_pricing))
-    except Exception:
-        pass
-    return Decimal("250.00")
+    return vehicle_daily_rate_for(client_request)[0]
 
 
 # ==========================================

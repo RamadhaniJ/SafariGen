@@ -637,3 +637,58 @@ class ActivityAndMealTests(PricingTestCase):
         snap = self.price(self.version)
         self.assertEqual(snap.total_optional_meals, D("100.00"))  # 12.50 x 8
         self.assertEqual(snap.total_activities, D("0.00"))
+
+
+# ---------------------------------------------------------------------------
+# 6. Vehicle price per company (review issue 6)
+# ---------------------------------------------------------------------------
+
+class VehiclePricePerCompanyTests(PricingTestCase):
+
+    def _quote_for(self, company_rate):
+        from Users.models import Company, CustomUserModel
+        owner = CustomUserModel.objects.create_user(email=f"o{_uid()}@x.test", password="x-Strong-pass-1", full_name="O")
+        company = Company.objects.create(owner=owner, name=f"Co {_uid()}", vehicle_rate_per_day=company_rate)
+        req = make_client_request(travellers=[("ADULT", 2, False)])
+        req.client_requested.company = company
+        req.client_requested.save()
+        version = make_version(req)
+        make_day(version, 1, 3)
+        return self.price(version), req
+
+    def test_company_price_is_used(self):
+        snap, _ = self._quote_for(D("320"))
+        self.assertEqual(snap.total_transport_vehicle, D("960.00"))  # 1 vehicle x 3 days x 320
+
+    def test_company_price_beats_the_default(self):
+        ConfigurationData.objects.create(vehicle_rent_pricing=D("200"))
+        snap, _ = self._quote_for(D("320"))
+        self.assertEqual(snap.total_transport_vehicle, D("960.00"))
+
+    def test_company_without_price_uses_the_default(self):
+        ConfigurationData.objects.create(vehicle_rent_pricing=D("200"))
+        snap, _ = self._quote_for(None)
+        self.assertEqual(snap.total_transport_vehicle, D("600.00"))
+
+    def test_no_company_price_and_no_default_still_250(self):
+        snap, _ = self._quote_for(None)
+        self.assertEqual(snap.total_transport_vehicle, D("750.00"))
+
+    def test_two_companies_get_their_own_prices(self):
+        ConfigurationData.objects.create(vehicle_rent_pricing=D("200"))
+        a, _ = self._quote_for(D("300"))
+        b, _ = self._quote_for(D("180"))
+        self.assertEqual((a.total_transport_vehicle, b.total_transport_vehicle), (D("900.00"), D("540.00")))
+
+    def test_zero_is_a_real_price(self):
+        ConfigurationData.objects.create(vehicle_rent_pricing=D("200"))
+        snap, _ = self._quote_for(D("0"))
+        self.assertEqual(snap.total_transport_vehicle, D("0.00"))
+
+    def test_live_preview_uses_the_same_rule(self):
+        from Clients.Serializer import SmallClientInfoToBuildItinerarySerializer as S
+        ConfigurationData.objects.create(vehicle_rent_pricing=D("200"))
+        _, req = self._quote_for(D("320"))
+        self.assertEqual(S(req).data["vehicle_rent_pricing"], {"vehicle_rent_pricing": 320.0, "source": "company"})
+        _, req2 = self._quote_for(None)
+        self.assertEqual(S(req2).data["vehicle_rent_pricing"], {"vehicle_rent_pricing": 200.0, "source": "default"})

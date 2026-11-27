@@ -38,7 +38,7 @@ class AdminPagesTests(TestCase):
         r = self.client.get(reverse("admin:index"))
         self.assertEqual(r.status_code, 200)
         html = r.content.decode()
-        for text in ["Needs attention", "Latest tour requests", "No vehicle price per day is set", "Quotes &amp; clients"]:
+        for text in ["Needs attention", "Latest tour requests", "no vehicle price and no default", "Quotes &amp; clients"]:
             self.assertIn(text, html)
 
     def test_every_list_and_add_page_opens(self):

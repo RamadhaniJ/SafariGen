@@ -71,6 +71,9 @@ class CompanyOnboardingSerializer(serializers.ModelSerializer):
                      "id","name","email","phone_number",
                      "logo","website","country","about",
 
+                     # pricing used for this company's quotes
+                     "vehicle_rate_per_day",
+
                      # shown to guests on quotes and PDFs
                      "address","whatsapp_number",
                      "facebook_url","instagram_url","tiktok_url",
@@ -102,6 +105,13 @@ class CompanyOnboardingSerializer(serializers.ModelSerializer):
                                    value = f"https://{value}"
                             data[field] = value
               return super().to_internal_value(data)
+
+       def validate_vehicle_rate_per_day(self, value):
+              if value is not None and value < 0:
+                     raise serializers.ValidationError("Vehicle price can't be negative.")
+              if value is not None and value > 10000:
+                     raise serializers.ValidationError("That looks too high for one vehicle per day. Check the amount.")
+              return value
 
        def validate_file_size_and_type(self, file, max_size_mb=5, allowed_extensions=None):
         if not file:

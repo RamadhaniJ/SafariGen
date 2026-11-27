@@ -38,8 +38,10 @@ automatically, send quotes and generate PDFs.
    `Clients/Serializer.py` and the frontend hook).
 5. Seasons (`AccommodationSeason`, `DestinationSeason`) have day and month but
    no year, so 2026 and 2027 rates can't coexist.
-6. Vehicle pricing and transit fees are one global `ConfigurationData` row
-   (`.objects.first()`), not per company.
+6. ~~Vehicle pricing is one global row.~~ Fixed on branch `fix/vehicle-price-per-company`:
+   `Company.vehicle_rate_per_day`, set in Company → Edit → Pricing or the admin. The
+   global `ConfigurationData` row is now only the default for companies without one.
+   Its two transit fee fields are unused (transit fees are set per activity).
 7. SQLite is the configured database. It should move to PostgreSQL.
 8. About 530 lines of commented-out old engine at the top of `Itinerary/pricing.py`,
    plus stray files: `Itinerary/testonly.py`, `Itinerary/test.py`,
@@ -172,8 +174,10 @@ Called when an itinerary is created (`Itinerary/Serializer.py`) or edited
      Not multiplied by nights.
    - **E. Optional meals.** If `is_optional` and priced: price × paying travellers.
      Not multiplied by nights.
-6. **Vehicle.** Daily rate = first `ConfigurationData.vehicle_rent_pricing`,
-   else **$250** (issue 4). Line = vehicles × tour days × rate.
+6. **Vehicle.** Daily rate from `vehicle_daily_rate_for()`: the company's
+   `vehicle_rate_per_day`, else the default `ConfigurationData.vehicle_rent_pricing`,
+   else **$250** (issue 4). Line = vehicles × tour days × rate. The live preview in the
+   quote builder uses the same function.
 7. **Totals.** Subtotal = accommodation + park fees + concession + vehicle +
    activities + meals. Commission = subtotal × % / 100. Grand total = subtotal +
    commission. Price per person = grand total / paying travellers (0 if none).

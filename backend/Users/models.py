@@ -66,6 +66,13 @@ class Company(models.Model):
                                help_text="Office address, e.g. 'Sekei Rd, Arusha'")
     whatsapp_number = models.CharField(max_length=20, blank=True, default="")
 
+    # Pricing used for this company's quotes.
+    vehicle_rate_per_day = models.DecimalField(
+        "vehicle price per day (USD)",
+        max_digits=10, decimal_places=2, blank=True, null=True,
+        help_text="Price for one safari vehicle per day (USD). Leave empty to use the SafariGen default.",
+    )
+
     # Social media links shown to guests. Leave empty to hide.
     facebook_url = models.URLField(blank=True, default="")
     instagram_url = models.URLField(blank=True, default="")

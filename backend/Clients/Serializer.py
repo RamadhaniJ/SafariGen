@@ -5,7 +5,6 @@ from ActivityLog.models import ActivitiesLogs
 from Destinations.models import Destination
 from django.utils import timezone
 from django.db import transaction
-from Configuration.models import ConfigurationData
 
 
 from Destinations.Serializer import DestinationListSerializer
@@ -455,11 +454,10 @@ class SmallClientInfoToBuildItinerarySerializer(serializers.ModelSerializer):
  
 
     def get_vehicle_rent_pricing(self, obj):
-            config = ConfigurationData.objects.first()
-            if config and config.vehicle_rent_pricing:
-                return {"vehicle_rent_pricing": float(config.vehicle_rent_pricing)}
-
-            return {"vehicle_rent_pricing": 250.00} 
+            # Same rule as the pricing engine: company price, then default, then $250.
+            from Itinerary.pricing import vehicle_daily_rate_for
+            rate, source = vehicle_daily_rate_for(obj)
+            return {"vehicle_rent_pricing": float(rate), "source": source}
 
 
     def get_start_destination_info(self, obj):
