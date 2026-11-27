@@ -30,7 +30,7 @@ def generate_pricing_pdf(request, client_id, version_id):
     tour_title = html.escape(snapshot.version.client_request.tour_title or "Safari Proposal")
     client_name = f"{snapshot.version.client_request.client_requested.salutation}. {snapshot.version.client_request.client_requested.first_name} {snapshot.version.client_request.client_requested.last_name}".strip()
     client_name = html.escape(client_name or "Valued Guest")
-    company_name = getattr(getattr(snapshot.version.client_request.client_requested, "company", None), "name", None) or "ACE Safaris Ltd."
+    company_name = getattr(getattr(snapshot.version.client_request.client_requested, "company", None), "name", None) or ""
     company_name = html.escape(company_name)
 
 

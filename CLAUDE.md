@@ -61,9 +61,10 @@ Other things noticed while reading (not yet fixed):
   assumes one).
 - The pricing PDF (`pricing_pdf.py`) is rendered with the caller's cookies
   and its endpoint has no permission check. Don't cache it until that's sorted.
-- `FooterSection5.jsx` (guest page footer) hard-codes social links
-  (acesafarisltd) and an "Arusha, Sekei Rd." address for every company, and
-  shows a broken image when the company has no logo.
+- Guest-facing company details (address, WhatsApp, six social links) live on
+  `Company` and are edited in Companies → Edit company (or the admin). Never
+  hard-code another company's details as a fallback: hide the item when the
+  company's own value is empty.
 - Logging out doesn't clear the sign-in cookies (`delete_cookie` without
   `samesite="None"`/`secure`), so a stale session keeps showing "Session Ended".
 - Rendering a PDF is slow and uneven (17–108 s locally, 8–9 MB files), mostly
@@ -242,7 +243,7 @@ CORS and CSRF in settings allow only `http://localhost:5173`.
 
 ```bash
 cd backend
-.venv/bin/python manage.py test backend Itinerary.tests Itinerary.tests_pdf_cache
+.venv/bin/python manage.py test backend Users Itinerary.tests Itinerary.tests_pdf_cache
 ```
 
 `Itinerary/tests.py` pins down today's pricing results, including the known-bad
@@ -251,5 +252,5 @@ the affected test in the same change and say why. Tests mock the Mapbox call.
 
 GitHub Actions (`.github/workflows/tests.yml`) runs on every pull request and every push
 to `main`: Django check, missing-migration check, `manage.py test backend
-Itinerary.tests Itinerary.tests_pdf_cache`, and a frontend `npm ci && npm run build`. When adding test
+Users Itinerary.tests Itinerary.tests_pdf_cache`, and a frontend `npm ci && npm run build`. When adding test
 modules, add them to that command until the stray test files are removed.

@@ -699,6 +699,9 @@ class ClientInformationPreviewSerializer(serializers.ModelSerializer):
     company_website = serializers.ReadOnlyField(source="client_request.client_requested.company.website", allow_null=True)
     company_country = serializers.ReadOnlyField(source="client_request.client_requested.company.country", allow_null=True)
     company_logo = serializers.SerializerMethodField()
+    company_address = serializers.ReadOnlyField(source="client_request.client_requested.company.address", allow_null=True)
+    company_whatsapp = serializers.ReadOnlyField(source="client_request.client_requested.company.whatsapp_number", allow_null=True)
+    company_socials = serializers.SerializerMethodField()
 
     #____________________________________________________
 
@@ -725,6 +728,9 @@ class ClientInformationPreviewSerializer(serializers.ModelSerializer):
             "company_website",
             "company_country",
             "company_logo",
+            "company_address",
+            "company_whatsapp",
+            "company_socials",
 
 
 
@@ -778,6 +784,10 @@ class ClientInformationPreviewSerializer(serializers.ModelSerializer):
             return str(obj.version_pricing_snapshot.price_per_person)
         except Exception:
             return None
+
+    def get_company_socials(self, obj):
+        company = obj.client_request.client_requested.company
+        return company.social_links() if company else []
 
     def get_company_logo(self, obj):
         if obj.client_request.client_requested.company.logo:

@@ -256,3 +256,31 @@ class PreviewRouteMapDataTests(PdfCacheTestBase):
             info = Client().get(url).json()["itinerary"]["days"][0]["destination_info"]
         self.assertIsNone(info["latitude"])
         self.assertIsNone(info["longitude"])
+
+
+class PreviewCompanyDetailsTests(PdfCacheTestBase):
+    """Guests see the company's own contact details and social links."""
+
+    def test_preview_includes_company_address_whatsapp_and_socials(self):
+        company = self.req.client_requested.company
+        company.address = "Sekei Rd, Arusha"
+        company.whatsapp_number = "+255 700 111 222"
+        company.instagram_url = "https://instagram.com/testsafaris"
+        company.save()
+        url = f"/api/itinerary/preview/client/safari/data/{self.req.id}/{self.version.id}/"
+        with patch("Itinerary.views.schedule_warm"):
+            info = Client().get(url).json()["itinerary"]["client_info"]
+        self.assertEqual(info["company_address"], "Sekei Rd, Arusha")
+        self.assertEqual(info["company_whatsapp"], "+255 700 111 222")
+        self.assertEqual(info["company_socials"], [
+            {"name": "Instagram", "url": "https://instagram.com/testsafaris", "handle": "@testsafaris"},
+        ])
+
+    def test_editing_company_details_rebuilds_the_saved_pdf(self):
+        pdf_cache.get_or_render(self.version)
+        company = self.req.client_requested.company
+        time.sleep(0.002)
+        company.facebook_url = "https://facebook.com/testsafaris"
+        company.save()
+        pdf_cache.get_or_render(self.version)
+        self.assertEqual(self.renderer.calls, 2)

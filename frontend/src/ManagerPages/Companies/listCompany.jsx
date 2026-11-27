@@ -348,19 +348,16 @@ function CompanyCard({ company, onEdit, formatDate, getFileName }) {
             <span>Created {formatDate(company.created_at)}</span>
           </div>
 
+          {/* Verified companies can still update guest contact details and social
+              links; the form keeps the verification fields locked. */}
           <button
             onClick={onEdit}
-            disabled={isVerified}
             title={
               isVerified
-                ? "Verified companies cannot be edited"
+                ? "Edit contact details and social links (verification details stay locked)"
                 : "Edit company"
             }
-            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-              isVerified
-                ? "bg-[#F6F1E7] text-[#6B6459]/60 cursor-not-allowed"
-                : "bg-[#0F2A2E] text-white hover:bg-[#E8772E] cursor-pointer active:scale-95"
-            }`}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all bg-[#0F2A2E] text-white hover:bg-[#E8772E] cursor-pointer active:scale-95"
           >
             <Pencil className="w-3 h-3" />
             Edit

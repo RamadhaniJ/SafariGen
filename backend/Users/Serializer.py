@@ -71,6 +71,11 @@ class CompanyOnboardingSerializer(serializers.ModelSerializer):
                      "id","name","email","phone_number",
                      "logo","website","country","about",
 
+                     # shown to guests on quotes and PDFs
+                     "address","whatsapp_number",
+                     "facebook_url","instagram_url","tiktok_url",
+                     "youtube_url","twitter_url","threads_url",
+
                      "certificate_of_incorporation","tax_id_certificate","tax_id_number",
 
  
@@ -79,6 +84,24 @@ class CompanyOnboardingSerializer(serializers.ModelSerializer):
 
               read_only_fields = ("created_at","status", "id")
 
+
+       SOCIAL_URL_FIELDS = (
+              "facebook_url", "instagram_url", "tiktok_url",
+              "youtube_url", "twitter_url", "threads_url",
+       )
+
+       def to_internal_value(self, data):
+              # Managers often type "instagram.com/name" without https:// — add it.
+              # Plain dict copy (QueryDict.copy() deep-copies uploaded files and fails).
+              data = data.dict() if hasattr(data, "dict") else dict(data)
+              for field in self.SOCIAL_URL_FIELDS:
+                     value = data.get(field) if hasattr(data, "get") else None
+                     if isinstance(value, str):
+                            value = value.strip()
+                            if value and not value.lower().startswith(("http://", "https://")):
+                                   value = f"https://{value}"
+                            data[field] = value
+              return super().to_internal_value(data)
 
        def validate_file_size_and_type(self, file, max_size_mb=5, allowed_extensions=None):
         if not file:
@@ -120,6 +143,13 @@ class CompanyOnboardingSerializer(serializers.ModelSerializer):
               email = attrs.get("email")
               phone_number = attrs.get("phone_number")
 
+              # On edit, fields that weren't sent keep their saved value.
+              if self.instance is not None:
+                    if email is None:
+                          email = self.instance.email
+                    if phone_number is None:
+                          phone_number = self.instance.phone_number
+
 
               if not email or not email.strip():
                     raise serializers.ValidationError("valid Company email is required")
@@ -132,15 +162,20 @@ class CompanyOnboardingSerializer(serializers.ModelSerializer):
               if domain in BLOCKED_EMAIL_DOMAINS:
                     raise serializers.ValidationError("Email rejected. User Official company email address")
 
-              if Company.objects.filter(email__iexact = email).exists():
+              same_email = Company.objects.filter(email__iexact = email)
+              if self.instance is not None:
+                    same_email = same_email.exclude(pk=self.instance.pk)   # its own email is fine
+              if same_email.exists():
                     raise serializers.ValidationError("This email already registered")
 
-              if not phone_number or len(phone_number) > 15:
+              # Count digits only: "+255 754 123 456" is valid (international max is 15 digits).
+              phone_digits = "".join(ch for ch in (phone_number or "") if ch.isdigit())
+              if not phone_digits or len(phone_digits) > 15 or len(phone_number) > 20:
                     raise serializers.ValidationError("Enter a valid company phone number")
 
 
               manager = self.context.get("request").user
-              if Company.objects.filter(
+              if self.instance is None and Company.objects.filter(   # only when adding a new company
                     owner = manager
               ).count() >= 3:
                     raise serializers.ValidationError("You can only add max 3 Company")

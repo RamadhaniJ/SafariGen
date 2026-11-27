@@ -18,7 +18,21 @@ import {
   Info,
   Mail,
   PhoneCall,
+  MapPin,
+  MessageCircle,
+  Share2,
 } from "lucide-react";
+
+// Social links shown to guests on quotes and PDFs (each one optional).
+const SOCIAL_FIELDS = [
+  { key: "facebook_url", label: "Facebook", placeholder: "facebook.com/yourcompany" },
+  { key: "instagram_url", label: "Instagram", placeholder: "instagram.com/yourcompany" },
+  { key: "tiktok_url", label: "TikTok", placeholder: "tiktok.com/@yourcompany" },
+  { key: "youtube_url", label: "YouTube", placeholder: "youtube.com/@yourcompany" },
+  { key: "twitter_url", label: "X (Twitter)", placeholder: "x.com/yourcompany" },
+  { key: "threads_url", label: "Threads", placeholder: "threads.net/@yourcompany" },
+];
+const EMPTY_SOCIALS = Object.fromEntries(SOCIAL_FIELDS.map((f) => [f.key, ""]));
 
 export default function ManagerEditCompanyPoUp({
   open,
@@ -49,6 +63,9 @@ export default function ManagerEditCompanyPoUp({
   const [taxCertificate, setTaxCertificate] = useState(null);
   const [taxPreview, setTaxPreview] = useState(null);
   const [taxNumber, setTaxNumber] = useState("");
+  const [address, setAddress] = useState("");
+  const [whatsapp, setWhatsapp] = useState("");
+  const [socials, setSocials] = useState(EMPTY_SOCIALS);
 
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
@@ -85,6 +102,9 @@ export default function ManagerEditCompanyPoUp({
     setWebsite(company.website || "");
     setCountry(company.country || "");
     setTaxNumber(company.tax_id_number || "");
+    setAddress(company.address || "");
+    setWhatsapp(company.whatsapp_number || "");
+    setSocials(Object.fromEntries(SOCIAL_FIELDS.map((f) => [f.key, company[f.key] || ""])));
 
     // Preview existing files
     setLogoPreview(company.logo || null);
@@ -194,7 +214,14 @@ export default function ManagerEditCompanyPoUp({
     }
 
     if (!country.trim()) newErrors.country = "Operating country is required";
-    if (!taxNumber.trim()) newErrors.taxNumber = "Tax ID number is required";
+    // Locked on verified companies, so it can't be fixed here — don't block saving.
+    if (!isVerified && !taxNumber.trim()) newErrors.taxNumber = "Tax ID number is required";
+
+    // Social links: a link if filled in (https:// is added automatically).
+    SOCIAL_FIELDS.forEach(({ key, label }) => {
+      const value = (socials[key] || "").trim();
+      if (value && !urlRegex.test(value)) newErrors[key] = `Enter a valid ${label} link`;
+    });
 
     // Hakuna validation ya files hapa — ni optional kwenye edit
 
@@ -224,6 +251,9 @@ export default function ManagerEditCompanyPoUp({
       formData.append("website", formattedWebsite);
       formData.append("country", country);
       formData.append("tax_id_number", taxNumber);
+      formData.append("address", address.trim());
+      formData.append("whatsapp_number", whatsapp.trim());
+      SOCIAL_FIELDS.forEach(({ key }) => formData.append(key, formatUrl(socials[key] || "")));
 
       // Ongeza files TU kama mtumiaji amechagua mpya
       if (logo) formData.append("logo", logo);
@@ -247,6 +277,13 @@ export default function ManagerEditCompanyPoUp({
             ? data.detail.join(" ")
             : data.detail;
         } else if (typeof data === "object") {
+          // Show each field's error under that field too (e.g. a bad Instagram link).
+          setErrors((p) => ({
+            ...p,
+            ...Object.fromEntries(
+              Object.entries(data).map(([k, v]) => [k, Array.isArray(v) ? v[0] : String(v)])
+            ),
+          }));
           const firstKey = Object.keys(data)[0];
           if (firstKey) {
             const firstError = data[firstKey];
@@ -500,6 +537,69 @@ export default function ManagerEditCompanyPoUp({
               {errors.country && (
                 <p className="text-xs text-[#8E2A1F]">{errors.country}</p>
               )}
+            </div>
+          </div>
+
+          {/* Guest-facing contact details & social media (all optional) */}
+          <div className="rounded-2xl border border-[#0F2A2E]/10 bg-[#0F2A2E]/[0.02] p-5 space-y-5">
+            <div>
+              <p className="text-sm font-semibold text-[#0F2A2E] flex items-center gap-2">
+                <Share2 className="w-4 h-4" /> Shown to your guests
+              </p>
+              <p className="text-xs text-[#6B6459] mt-1">
+                These appear on every quote page and PDF. Leave a field empty to hide it.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <Field label="Office Address" error={errors.address}>
+                <div className="relative">
+                  <MapPin className="w-4 h-4 text-[#6B6459] absolute left-3.5 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    value={address}
+                    maxLength={255}
+                    onChange={(e) => setAddress(e.target.value)}
+                    className={`${inputBase} ${errors.address ? inputErr : inputOk}`}
+                    placeholder="Sekei Rd, Arusha"
+                  />
+                </div>
+              </Field>
+              <Field label="WhatsApp Number" error={errors.whatsapp_number}>
+                <div className="relative">
+                  <MessageCircle className="w-4 h-4 text-[#6B6459] absolute left-3.5 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="tel"
+                    value={whatsapp}
+                    maxLength={20}
+                    onChange={(e) => setWhatsapp(e.target.value)}
+                    className={`${inputBase} ${errors.whatsapp_number ? inputErr : inputOk}`}
+                    placeholder="+255 700 000 000"
+                  />
+                </div>
+              </Field>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              {SOCIAL_FIELDS.map(({ key, label, placeholder }) => (
+                <Field key={key} label={label} error={errors[key]}>
+                  <div className="relative">
+                    <Globe className="w-4 h-4 text-[#6B6459] absolute left-3.5 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="text"
+                      inputMode="url"
+                      value={socials[key]}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        setSocials((p) => ({ ...p, [key]: value }));
+                        setErrors((p) => ({ ...p, [key]: null }));
+                      }}
+                      className={`${inputBase} ${errors[key] ? inputErr : inputOk}`}
+                      placeholder={placeholder}
+                    />
+                  </div>
+                </Field>
+              ))}
             </div>
           </div>
 

@@ -206,7 +206,7 @@ export default function PdfHeroSection({ safariData }) {
             </div>
             <div>
               <p className="text-[10px] font-bold uppercase leading-none tracking-[0.34em] text-[#B98B3E]">
-                {client_info.company_name || "ACE"}
+                {client_info.company_name || ""}
               </p>
               <p className="mt-1.5 text-[8.5px] uppercase leading-none tracking-[0.3em] text-[#F8F4EA]/45">
                 Bespoke Safari Proposal
@@ -318,26 +318,32 @@ export default function PdfHeroSection({ safariData }) {
                       Warm regards
                     </p>
                     <p className="ddw-serif text-[17px] font-bold leading-tight text-[#F8F4EA]">
-                      {client_info.creator_full_name || "James Rashid"}
+                      {client_info.creator_full_name || client_info.company_name}
                     </p>
-                    <p className="mt-1 text-[11px] text-[#F8F4EA]/55">
-                      {client_info.company_name || "ACE"}
-                    </p>
+                    {client_info.company_name && client_info.creator_full_name && (
+                      <p className="mt-1 text-[11px] text-[#F8F4EA]/55">
+                        {client_info.company_name}
+                      </p>
+                    )}
                   </div>
 
                   <div className="space-y-2.5">
-                    <div className="flex items-center gap-3 text-[#F8F4EA]/85">
-                      <Phone className="h-3.5 w-3.5 shrink-0 text-[#B98B3E]" />
-                      <span className="text-[12px] font-medium tracking-wide">
-                        {client_info.company_phone || "+255 766 792 993"}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-3 text-[#F8F4EA]/85">
-                      <Mail className="h-3.5 w-3.5 shrink-0 text-[#B98B3E]" />
-                      <span className="truncate text-[12px] font-medium tracking-wide">
-                        {client_info.company_email || "info@safari.com"}
-                      </span>
-                    </div>
+                    {client_info.company_phone && (
+                      <div className="flex items-center gap-3 text-[#F8F4EA]/85">
+                        <Phone className="h-3.5 w-3.5 shrink-0 text-[#B98B3E]" />
+                        <span className="text-[12px] font-medium tracking-wide">
+                          {client_info.company_phone}
+                        </span>
+                      </div>
+                    )}
+                    {client_info.company_email && (
+                      <div className="flex items-center gap-3 text-[#F8F4EA]/85">
+                        <Mail className="h-3.5 w-3.5 shrink-0 text-[#B98B3E]" />
+                        <span className="truncate text-[12px] font-medium tracking-wide">
+                          {client_info.company_email}
+                        </span>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -373,7 +379,7 @@ export default function PdfHeroSection({ safariData }) {
         <div className="mt-auto flex items-center justify-between gap-6 border-t border-[#B98B3E]/35 pt-5">
           <div>
             <p className="ddw-serif text-[17px] font-bold leading-tight text-[#F8F4EA]">
-              {client_info.company_name || "ACE"}
+              {client_info.company_name || ""}
             </p>
             <p className="mt-1 text-[8.5px] tracking-[0.3em] text-[#F8F4EA]/50">
               {cleanedWebsite}

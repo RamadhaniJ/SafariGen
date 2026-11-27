@@ -225,8 +225,9 @@ IMAGE_OPTIMIZER_QUALITY = 85
 # Saved copies of the guest itinerary PDF (see Itinerary/pdf_cache.py).
 PDF_CACHE_DIR = os.getenv("PDF_CACHE_DIR", str(BASE_DIR / "pdf_cache"))
 PDF_CACHE_MAX_AGE_HOURS = float(os.getenv("PDF_CACHE_MAX_AGE_HOURS", "168"))  # 7 days
-# Change this (e.g. 1 -> 2) after changing the PDF design, so every saved PDF is rebuilt.
-PDF_CACHE_VERSION = os.getenv("PDF_CACHE_VERSION", "1")
+# Change this (e.g. 2 -> 3) after changing the PDF design, so every saved PDF is rebuilt.
+# 2: removed hard-coded company details (phone, email, socials) from the PDF.
+PDF_CACHE_VERSION = os.getenv("PDF_CACHE_VERSION", "2")
 # Pre-build PDFs in the background when a quote is saved or its preview is opened.
 PDF_PREBUILD_ENABLED = os.getenv("PDF_PREBUILD_ENABLED", "true").strip().lower() not in ("0", "false", "no", "off")
 
