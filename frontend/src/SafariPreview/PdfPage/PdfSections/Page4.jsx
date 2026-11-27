@@ -245,7 +245,7 @@ export default function Page4PDFSection({ safariData }) {
 
   const tourCode = client_info.tour_code || "—";
   const companyName =
-    client_info.staff_company || client_info.company_name || "ACE";
+    client_info.staff_company || client_info.company_name || "";
 
   /* ── Flatten optional activities + meals into unified rows ── */
   const rows = [];

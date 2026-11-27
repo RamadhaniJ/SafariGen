@@ -21,6 +21,12 @@ class AdminManagerProfile(admin.ModelAdmin):
 @admin.register(Company)
 class AdminManagerCompany(admin.ModelAdmin):
     list_display = ["name","website","country","status","created_at"]
+    fieldsets = [
+        (None, {"fields": ["owner", "name", "status", "logo", "about"]}),
+        ("Contact (shown to guests)", {"fields": ["email", "phone_number", "whatsapp_number", "address", "country", "website"]}),
+        ("Social media (shown to guests)", {"fields": ["facebook_url", "instagram_url", "tiktok_url", "youtube_url", "twitter_url", "threads_url"]}),
+        ("Verification documents", {"fields": ["certificate_of_incorporation", "tax_id_certificate", "tax_id_number"]}),
+    ]
 
    
 

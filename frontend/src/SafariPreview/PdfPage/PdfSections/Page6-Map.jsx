@@ -310,7 +310,7 @@ export default function Page6MapPDFSection({ safariData }) {
 
   const tourCode = client_info.tour_code || "—";
   const companyName =
-    client_info.staff_company || client_info.company_name || "ACE";
+    client_info.staff_company || client_info.company_name || "";
 
   const startDestination =
     client_info.start_destination ||

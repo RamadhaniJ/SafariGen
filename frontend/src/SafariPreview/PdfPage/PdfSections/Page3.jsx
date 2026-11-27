@@ -171,7 +171,7 @@ export default function Page3PDFSection({ safariData }) {
 
   const tourCode = client_info.tour_code || "—";
   const companyName =
-    client_info.staff_company || client_info.company_name || "ACE";
+    client_info.staff_company || client_info.company_name || "";
 
   const startYear = (() => {
     const d = new Date(client_info.tour_start_date);

@@ -278,7 +278,7 @@ export default function Page5PDFSection({ safariData }) {
 
   const tourCode = client_info.tour_code || "—";
   const companyName =
-    client_info.staff_company || client_info.company_name || "ACE";
+    client_info.staff_company || client_info.company_name || "";
   const tourTitle = client_info.tour_title || "Safari Itinerary Summary";
 
   /* ── Unique destinations (in order of appearance) ── */

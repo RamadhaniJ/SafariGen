@@ -56,6 +56,19 @@ class Company(models.Model):
     website = models.URLField(blank=True, null=True)
     country = models.CharField(max_length=60, blank=True, null=True)
     about = models.TextField( blank=True, null=True)
+
+    # Contact details shown to guests (quote page footer and PDF). Optional.
+    address = models.CharField(max_length=255, blank=True, default="",
+                               help_text="Office address, e.g. 'Sekei Rd, Arusha'")
+    whatsapp_number = models.CharField(max_length=20, blank=True, default="")
+
+    # Social media links shown to guests. Leave empty to hide.
+    facebook_url = models.URLField(blank=True, default="")
+    instagram_url = models.URLField(blank=True, default="")
+    tiktok_url = models.URLField(blank=True, default="")
+    youtube_url = models.URLField(blank=True, default="")
+    twitter_url = models.URLField(blank=True, default="", help_text="X (Twitter) profile link")
+    threads_url = models.URLField(blank=True, default="")
      
     # Verification Docs
     certificate_of_incorporation = models.FileField(upload_to="CompanyDocs/Incorporation/", blank=True, null=True)
@@ -71,6 +84,26 @@ class Company(models.Model):
     
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    SOCIAL_FIELDS = [
+        ("Facebook", "facebook_url"),
+        ("Instagram", "instagram_url"),
+        ("TikTok", "tiktok_url"),
+        ("YouTube", "youtube_url"),
+        ("Twitter", "twitter_url"),
+        ("Threads", "threads_url"),
+    ]
+
+    def social_links(self):
+        """[{name, url, handle}] for the links this company has filled in."""
+        links = []
+        for name, field in self.SOCIAL_FIELDS:
+            url = (getattr(self, field, "") or "").strip()
+            if not url:
+                continue
+            handle = url.rstrip("/").split("/")[-1].split("?")[0]
+            links.append({"name": name, "url": url, "handle": handle if handle.startswith("@") else f"@{handle}"})
+        return links
 
     def __str__(self):
         return self.name

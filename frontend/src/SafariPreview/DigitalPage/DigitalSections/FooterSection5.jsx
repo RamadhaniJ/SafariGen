@@ -1,23 +1,17 @@
 import { useState, useRef, useEffect } from "react";
-import { Link } from "react-router-dom";
 import {
   FileDown,
   Loader2,
-  MapPin,
   Globe,
   Phone,
   Mail,
+  MapPin,
+  MessageCircle,
   ArrowUpRight,
 } from "lucide-react";
 import { toast } from "react-toastify";
 import api from "../../../Apis/api";
 import PriceBreakdownSideBarSubSection from "../SubSections/SideBar-Pricing";
-
-/* ------------------------------------------------------------------ */
-/*  Premium social icons (your file)                                   */
-/*  Adjust this path to wherever you saved SocialIcons.jsx             */
-/* ------------------------------------------------------------------ */
-
 import {
   FacebookIcon,
   InstagramIcon,
@@ -26,6 +20,15 @@ import {
   TwitterIcon,
   ThreadsIcon,
 } from "../SocialIcons/Icons";
+
+const SOCIAL_ICONS = {
+  Facebook: FacebookIcon,
+  Instagram: InstagramIcon,
+  TikTok: TikTokIcon,
+  YouTube: YouTubeIcon,
+  Twitter: TwitterIcon,
+  Threads: ThreadsIcon,
+};
 
 
 /* ------------------------------------------------------------------ */
@@ -42,14 +45,7 @@ const PDF_STEPS = [
   "Almost there — preparing your download…",
 ];
 
-const SOCIALS = [
-  { label: "Facebook", Icon: FacebookIcon, href: "https://facebook.com/acesafarisltd" },
-  { label: "Instagram", Icon: InstagramIcon, href: "https://instagram.com/acesafarisltd" },
-  { label: "TikTok", Icon: TikTokIcon, href: "https://tiktok.com/@acesafarisltd" },
-  { label: "YouTube", Icon: YouTubeIcon, href: "https://youtube.com/@acesafarisltd" },
-  { label: "Twitter", Icon: TwitterIcon, href: "https://twitter.com/acesafarisltd" },
-  { label: "Threads", Icon: ThreadsIcon, href: "https://threads.net/@acesafarisltd" },
-];
+
 
 /* ------------------------------------------------------------------ */
 /*  Component                                                          */
@@ -74,6 +70,15 @@ export default function FooterDigitalSection({
     const handlePricingBreakDown = () =>
     setShowPricingBreakdown((prev) => !prev);
 
+
+  // The company's own social accounts (set in Companies → Edit company).
+  const SOCIALS = (client_info?.company_socials || [])
+    .filter((sm) => SOCIAL_ICONS[sm.name])
+    .map((sm) => ({ label: sm.name === "Twitter" ? "X (Twitter)" : sm.name, Icon: SOCIAL_ICONS[sm.name], href: sm.url }));
+  const whatsappDigits = (client_info?.company_whatsapp || "").replace(/[^\d]/g, "");
+
+  const rawWebsite = (client_info?.company_website || "").trim();
+  const websiteUrl = rawWebsite ? (/^https?:\/\//i.test(rawWebsite) ? rawWebsite : `https://${rawWebsite}`) : null;
 
   /* ----------------------------- price ----------------------------- */
   const rawTotal = Number(map_image_url?.grand_total ?? 0);
@@ -244,17 +249,23 @@ export default function FooterDigitalSection({
                 className="absolute inset-0 rounded-2xl bg-gradient-to-br from-[#FBF8F1]/25 to-transparent blur-md"
               />
               <div className="relative grid h-16 w-16 place-items-center rounded-2xl border border-white/15 bg-[#FBF8F1]/[0.06] p-2 shadow-[0_10px_30px_-14px_rgba(0,0,0,0.9)] transition-transform duration-500 hover:scale-105">
-                <img
-                  src={client_info?.company_logo}
-                  alt={client_info?.company_name || "Company logo"}
-                  className="h-full w-full object-contain"
-                />
+                {client_info?.company_logo ? (
+                  <img
+                    src={client_info.company_logo}
+                    alt={client_info?.company_name || "Company logo"}
+                    className="h-full w-full object-contain"
+                  />
+                ) : (
+                  <span className="text-2xl font-bold text-[#B98B3E]">
+                    {(client_info?.company_name || "?").charAt(0).toUpperCase()}
+                  </span>
+                )}
               </div>
             </div>
 
             <div className="min-w-0">
               <p className="truncate text-[15px] font-semibold tracking-tight text-[#FBF8F1]">
-                {client_info?.creator_full_name || "James Mollel"}
+                {client_info?.creator_full_name || client_info?.company_name}
               </p>
               <p className="mt-0.5 truncate text-xs text-[#FBF8F1]/45">
                 {client_info?.company_name}
@@ -264,25 +275,34 @@ export default function FooterDigitalSection({
           </div>
 
             <ul className="mt-7 space-y-5">
-              <ContactRow Icon={MapPin} label="Address" value="Arusha, Sekei Rd." />
-              <ContactRow Icon={Globe} label="Country" value={client_info.company_country} />
+              <ContactRow Icon={MapPin} label="Address" value={client_info?.company_address} />
+              <ContactRow Icon={Globe} label="Country" value={client_info?.company_country} />
+              <ContactRow
+                Icon={MessageCircle}
+                label="WhatsApp"
+                value={client_info?.company_whatsapp}
+                href={whatsappDigits ? `https://wa.me/${whatsappDigits}` : undefined}
+              />
               <ContactRow
                 Icon={Phone}
                 label="Phone"
                 value={client_info?.company_phone}
-                href={`tel:${client_info.company_phone}`}
+                href={client_info?.company_phone ? `tel:${client_info.company_phone.replace(/\s+/g, "")}` : undefined}
               />
               <ContactRow
                 Icon={Mail}
                 label="Email"
-                value={client_info.company_email}
-                href={`mailto:${client_info.company_email}`}
+                value={client_info?.company_email}
+                href={client_info?.company_email ? `mailto:${client_info.company_email}` : undefined}
               />
             </ul>
           </div>
 
           {/* ================= Right — Socials ================= */}
+          {(SOCIALS.length > 0 || websiteUrl) && (
           <div className="lg:col-span-3">
+            {SOCIALS.length > 0 && (
+            <>
             <p className="text-sm text-[#FBF8F1]/45">Follow us</p>
 
             <ul className="mt-4 -ml-3 space-y-0.5">
@@ -308,15 +328,22 @@ export default function FooterDigitalSection({
             </ul>
 
             <div className="mt-8 h-px w-full bg-[#B98B3E]/15" />
+            </>
+            )}
 
-            <Link
-              to={client_info?.company_website}
+            {websiteUrl && (
+            <a
+              href={websiteUrl}
+              target="_blank"
+              rel="noreferrer noopener"
               className="group mt-6 inline-flex items-center gap-2 text-sm font-semibold text-[#FBF8F1]"
             >
               Visit our website
               <ArrowUpRight className="h-4 w-4 text-[#B98B3E] transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
-            </Link>
+            </a>
+            )}
           </div>
+          )}
         </div>
       </div>
 
@@ -336,6 +363,7 @@ export default function FooterDigitalSection({
 /* ------------------------------------------------------------------ */
 
 function ContactRow({ Icon, label, value, href }) {
+  if (!value) return null;
   const content = (
     <div className="flex items-start gap-3">
       <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#B98B3E]/10 text-[#B98B3E] transition-colors group-hover:bg-[#B98B3E] group-hover:text-[#16211A]">
@@ -353,7 +381,7 @@ function ContactRow({ Icon, label, value, href }) {
   return (
     <li className="group">
       {href ? (
-        <a href={href} className="block transition-opacity hover:opacity-80">
+        <a href={href} target={href.startsWith("http") ? "_blank" : undefined} rel="noreferrer noopener" className="block transition-opacity hover:opacity-80">
           {content}
         </a>
       ) : (

@@ -140,7 +140,7 @@ export default function ItineraryDownloadToPdf() {
               We look forward to welcoming you on this incredible journey.
             </p>
             <p className="text-sm text-[#B98B3E] font-bold uppercase tracking-widest pt-4">
-              {safariData?.itinerary?.client_info?.staff_company || "ACE"} Safaris Ltd.
+              {safariData?.itinerary?.client_info?.company_name}
             </p>
           </div>
         </div>

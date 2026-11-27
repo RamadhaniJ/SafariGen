@@ -36,11 +36,7 @@ const SOCIAL_ICON_MAP = {
   THREADS: ThreadsIcon,
 };
 
-/* ── Company social accounts (badilisha na real data kutoka backend baadaye) ── */
-const COMPANY_SOCIAL = [
-  { name: "TikTok", handle: "tanzania.explores" },
-  { name: "Instagram", handle: "tanzania_explores_tours" },
-];
+// Social accounts come from the company's own settings (client_info.company_socials).
 
 /* ── Chapter opener ── */
 function ChapterOpener({ part, icon, title, subtitle }) {
@@ -110,6 +106,7 @@ function CompanyIntro({ companyName, about }) {
 
 /* ── Contact item ── */
 function ContactItem({ icon, label, value, tone = "gold" }) {
+  if (!value) return null;
   const accent = tone === "green" ? "#1E5A3B" : "#B98B3E";
   const accentDeep = tone === "green" ? "#1E5A3B" : "#8A6528";
 
@@ -151,6 +148,7 @@ function ContactItem({ icon, label, value, tone = "gold" }) {
 
 /* ── Contact grid ── */
 function ContactGrid({ address, country, whatsapp, phone, email, website }) {
+  if (![address, country, whatsapp, phone, email, website].some(Boolean)) return null;
   return (
     <div>
       <SectionLabel icon={<ShieldCheck />} label="Get in Touch" />
@@ -385,6 +383,7 @@ function StaffSignature({ staffName, companyName, tourCode }) {
 
 /* ── Closing CTA ── */
 function ClosingCTA({ website }) {
+  if (!website) return null;
   return (
     <div className="relative break-inside-avoid border border-[#B98B3E]/45 bg-[#0B1410] px-7 py-5">
       <div
@@ -447,24 +446,25 @@ export default function Page8PDFCompanyAboutSection({ safariData }) {
 
   if (!client_info) return null;
 
-  const companyName =
-    client_info.company_name || client_info.staff_company || "ACE";
-  const companyAddress = client_info.company_address || "Arusha, Tanzania";
-  const companyCountry = client_info.company_country || "Tanzania";
-  const companyPhone = client_info.company_phone || "—";
-  const companyWhatsApp = client_info.company_whatsup_number || companyPhone;
-  const companyEmail = client_info.company_email || "info@safaritz.com";
+  // Only the company's own details: never fill gaps with another company's.
+  const companyName = client_info.company_name || client_info.staff_company || "";
+  const companyAddress = client_info.company_address || null;
+  const companyCountry = client_info.company_country || null;
+  const companyPhone = client_info.company_phone || null;
+  const companyWhatsApp = client_info.company_whatsapp || null;
+  const companySocials = (client_info.company_socials || []).map((sm) => ({ name: sm.name, handle: sm.handle }));
+  const companyEmail = client_info.company_email || null;
 
 
   function cleanWebsite(url) {
-      if (!url || typeof url !== "string") return "www.safariadventures.com";
+      if (!url || typeof url !== "string" || !url.trim()) return null;
       let cleaned = url.replace(/^https?:\/\//i, "").replace(/\/+$/, "");
       cleaned = cleaned.replace(/^www\./i, "");
       return `www.${cleaned}`;
     }
 
 
-  const companyWebsite = cleanWebsite(client_info.company_website || "https://myapp.my")
+  const companyWebsite = cleanWebsite(client_info.company_website)
     
   const companyLogo = client_info.company_logo || null;
 
@@ -511,7 +511,7 @@ export default function Page8PDFCompanyAboutSection({ safariData }) {
     {
       id: "social",
       weight: 55,
-      element: <SocialMediaRow accounts={COMPANY_SOCIAL} />,
+      element: <SocialMediaRow accounts={companySocials} />,
     },
     {
       id: "ornament",

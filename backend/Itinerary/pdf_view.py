@@ -92,7 +92,7 @@ def render_itinerary_pdf(version):
     tour_title = client.client_request.tour_title 
 
     client_name = f"{client.client_request.client_requested.salutation}. {client.client_request.client_requested.first_name} {client.client_request.client_requested.last_name}".strip()
-    company_name = getattr(getattr(client.client_request.client_requested, "company", None), "name", None) or "ACE Safaris Ltd."
+    company_name = getattr(getattr(client.client_request.client_requested, "company", None), "name", None) or ""
 
     tour_code = html.escape(tour_code or "N/A")
     tour_title = html.escape(tour_title or "Safari Proposal")
