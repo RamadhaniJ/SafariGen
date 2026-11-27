@@ -6,11 +6,11 @@
     
     <div style="margin-bottom: 25px;">
         <!-- URL imerekebishwa kuwa lowercase -->
-        <a href="{% url opts|admin_urlname:'change' destination.pk %}" class="button" style="background: #417690; color: white; padding: 10px 18px; text-decoration: none; border-radius: 4px; font-weight: bold;">
+        <a href="{% url opts|admin_urlname:'change' destination.pk %}" class="button" style="background: var(--color-primary-600); color: white; padding: 10px 18px; text-decoration: none; border-radius: 4px; font-weight: bold;">
             ← Return To {{ destination.name }}
         </a>
-        <h1 style="margin-top: 20px; font-size: 24px; color: #333;">
-            📸 Bulk Image Upload: <span style="color: #417690;">{{ destination.name }}</span>
+        <h1 class="text-font-important-light dark:text-font-important-dark" style="margin-top: 20px; font-size: 24px;">
+            📸 Bulk Image Upload: <span style="color: var(--color-primary-600);">{{ destination.name }}</span>
         </h1>
     </div>
 
@@ -27,7 +27,7 @@
 
     <!-- Form ya Dropzone -->
     <!-- URL imerekebishwa hapa pia -->
-    <form action="{% url opts|admin_urlname:'bulk_upload' destination.pk %}" method="post" enctype="multipart/form-data" class="dropzone" id="destination-dropzone" style="border: 2px dashed #417690; border-radius: 12px; background: #f8fafc; padding: 40px; text-align: center; cursor: pointer;">
+    <form action="{% url opts|admin_urlname:'bulk_upload' destination.pk %}" method="post" enctype="multipart/form-data" class="dropzone" id="destination-dropzone" style="border: 2px dashed var(--color-primary-600); border-radius: 12px; background: #f8fafc; padding: 40px; text-align: center; cursor: pointer;">
         {% csrf_token %}
         <div class="dz-message">
             <div style="font-size: 48px; margin-bottom: 10px;">🖼️</div>

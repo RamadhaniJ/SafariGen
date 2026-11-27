@@ -5,6 +5,7 @@ Django==6.1
 django-cors-headers==4.9.0
 django-filter==26.2
 django-optimize-image==0.3.1
+django-unfold==0.111.0
 djangorestframework==3.18.0
 djangorestframework_simplejwt==5.5.1
 greenlet==3.5.5

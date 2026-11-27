@@ -25,3 +25,6 @@ staticfiles/
 
 # Saved PDF copies (backend/Itinerary/pdf_cache.py)
 backend/pdf_cache/
+
+# collectstatic output
+backend/staticfiles/

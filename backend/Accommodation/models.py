@@ -97,6 +97,8 @@ class Accommodation(models.Model):
 
  
     class Meta:
+        verbose_name = "lodge / hotel"
+        verbose_name_plural = "lodges & hotels"
         ordering = ["-is_sponsored","sponsored_priority","name"]
 
 
@@ -144,6 +146,8 @@ class AccommodationSeason(models.Model):
 
     created_at = models.DateTimeField(auto_now_add=True)
     class Meta:
+        verbose_name = "lodge season"
+        verbose_name_plural = "lodge seasons"
         ordering = ['start_day','start_month']
 
 
@@ -155,6 +159,10 @@ class AccommodationSeason(models.Model):
 
 
 class AccommodationRoomType(models.Model):
+    class Meta:
+        verbose_name = "room type"
+        verbose_name_plural = "room types"
+
     accommodation = models.ForeignKey(
         Accommodation,
         on_delete=models.CASCADE,
@@ -187,6 +195,10 @@ class AccommodationRoomType(models.Model):
 
 
 class RoomRate(models.Model):
+    class Meta:
+        verbose_name = "room price"
+        verbose_name_plural = "room prices"
+
 
     room_type = models.ForeignKey(
         AccommodationRoomType,
@@ -228,6 +240,10 @@ class RoomRate(models.Model):
 
 
 class AccommodationDescription(models.Model):
+    class Meta:
+        verbose_name = "lodge description"
+        verbose_name_plural = "lodge descriptions"
+
     accommodation = models.ForeignKey(
                                         Accommodation, 
                                         on_delete=models.CASCADE, 
@@ -243,6 +259,10 @@ class AccommodationDescription(models.Model):
 
 
 class AccommodationImages(models.Model):
+    class Meta:
+        verbose_name = "lodge photo"
+        verbose_name_plural = "lodge photos"
+
     accommodation = models.ForeignKey(
                                         Accommodation,
                                         on_delete=models.CASCADE,

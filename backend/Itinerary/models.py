@@ -55,6 +55,8 @@ class MainDayByDayItinerary(models.Model):
 
 
     class Meta:
+        verbose_name = "itinerary day"
+        verbose_name_plural = "itinerary days"
         ordering = ["day_number"]
 
 
@@ -69,6 +71,10 @@ class MainDayByDayItinerary(models.Model):
 
 # chagua siku then add room selected that day ....
 class SelectedDayRoom(models.Model):
+    class Meta:
+        verbose_name = "room on a day"
+        verbose_name_plural = "rooms on days"
+
     id = models.UUIDField(primary_key=True, editable=False, default=uuid7)
 
     day_itinerary = models.ForeignKey(
@@ -106,6 +112,10 @@ class SelectedDayRoom(models.Model):
 
 
 class ItineraryPricingSnapshot(models.Model):
+    class Meta:
+        verbose_name = "quote price"
+        verbose_name_plural = "quote prices"
+
 
     id = models.UUIDField(
         default=uuid7, primary_key=True, editable=False
@@ -287,6 +297,8 @@ class ItineraryPricingBreakdownItem(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
+        verbose_name = "price line"
+        verbose_name_plural = "price lines"
         ordering = ["day_number", "sort_order"]
 
 
@@ -424,6 +436,8 @@ class ItineraryVersion(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
+        verbose_name = "itinerary"
+        verbose_name_plural = "itineraries"
         unique_together = ("client_request","version_number")
         ordering = ['-version_number']
         constraints = [

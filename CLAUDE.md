@@ -239,6 +239,19 @@ npm run dev                 # http://localhost:5173
 
 CORS and CSRF in settings allow only `http://localhost:5173`.
 
+### Admin dashboard
+
+`/admin/` uses the django-unfold theme. The sidebar menu, colours and dashboard are set in
+`UNFOLD` in `backend/backend/settings.py`; the home page numbers and "Needs attention" list
+come from `backend/backend/admin_dashboard.py` (template `backend/templates/admin/index.html`).
+Admin classes must inherit `unfold.admin.ModelAdmin` / `TabularInline` / `StackedInline`.
+New models also need an entry in `UNFOLD["SIDEBAR"]["navigation"]` to appear in the menu.
+`backend/backend/tests_admin.py` opens every admin page, so a broken screen fails CI.
+
+Deploying it: `pip install -r requirements.txt`, `python manage.py migrate`, then
+`python manage.py collectstatic --noinput`. nginx must serve `/static/` from `STATIC_ROOT`
+(default `backend/staticfiles/`), otherwise the admin loads without its styling.
+
 ### Tests
 
 ```bash

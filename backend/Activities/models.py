@@ -8,6 +8,10 @@ from uuid6 import uuid7
 
 # LISTED TO USER TO SELECT (FROM VIA TO.)
 class ActivityLocation(models.Model):
+    class Meta:
+        verbose_name = "activity place"
+        verbose_name_plural = "activity places"
+
     # used  in seraching  activity location
     location_name = models.CharField(
                                  max_length=200,
@@ -25,6 +29,10 @@ class ActivityLocation(models.Model):
 
 # LISTED TO USER TO SELECT
 class ActivityType(models.Model):
+    class Meta:
+        verbose_name = "activity type"
+        verbose_name_plural = "activity types"
+
     title = models.CharField(max_length=240, help_text="eg. Game Driver(Not Transport), Arusha to Manyara(Transport)")
     involve_transport = models.BooleanField(
         default=False,
@@ -169,6 +177,8 @@ class Activity(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
+        verbose_name = "activity on a day"
+        verbose_name_plural = "activities on days"
         ordering = ["moment"]
 
     def __str__(self):

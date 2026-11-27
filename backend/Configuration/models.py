@@ -4,6 +4,10 @@ from django.db import models
 # Create your models here.
 
 class HeroSectionImages(models.Model):
+    class Meta:
+        verbose_name = "quote cover photo"
+        verbose_name_plural = "quote cover photos"
+
     image = models.ImageField(upload_to="heroImgs")
     image_tag = models.CharField(max_length=200, choices=[
         ("Serengeti","Serengeti"),
@@ -33,6 +37,10 @@ class HeroSectionImages(models.Model):
 
 
 class ConfigurationData(models.Model):
+    class Meta:
+        verbose_name = "vehicle & transit prices"
+        verbose_name_plural = "vehicle & transit prices"
+
     vehicle_rent_pricing = models.DecimalField(
         max_digits=10,
         decimal_places=2,

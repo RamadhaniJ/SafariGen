@@ -74,6 +74,10 @@ class DestinationSeason(models.Model):
 
 
 class DestinationFee(models.Model):
+    class Meta:
+        verbose_name = "park / rescue fee"
+        verbose_name_plural = "park & rescue fees"
+
     destination = models.ForeignKey(
         Destination,
         related_name="destination_fee",

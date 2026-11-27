@@ -7,6 +7,10 @@ from Itinerary.models import MainDayByDayItinerary
 
 # To list ... 
 class MealPlan(models.Model):
+    class Meta:
+        verbose_name = "meal option"
+        verbose_name_plural = "meal options"
+
     name = models.CharField(max_length=240)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -18,6 +22,10 @@ class MealPlan(models.Model):
  
 # created ...
 class OptionalMeal(models.Model):
+        class Meta:
+                verbose_name = "meal on a day"
+                verbose_name_plural = "meals on days"
+
         id = models.UUIDField(editable=False, default=uuid7, primary_key=True)
         day_optional_meal = models.ForeignKey(
              MainDayByDayItinerary,
