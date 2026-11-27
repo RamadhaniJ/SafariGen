@@ -14,7 +14,7 @@ from django.utils import timezone
 import math
 import uuid
 from Destinations.models import Destination
-from Itinerary.pricing import calculate_and_save_pricing_snapshot
+from Itinerary.pricing import calculate_and_save_pricing_snapshot, MissingPricesError
 from Itinerary.pdf_cache import schedule_warm
 
  
@@ -537,11 +537,18 @@ class EditItinerarySerializer(serializers.Serializer):
             # ==========================================
             # HATUA 4: Calculate Pricing Mpya
             # ==========================================
-            snapshot = calculate_and_save_pricing_snapshot(
-                itinerary_version=new_version,
-                commission_percentage=commission_pct,
-                current_user=current_user
-            )
+            try:
+                snapshot = calculate_and_save_pricing_snapshot(
+                    itinerary_version=new_version,
+                    commission_percentage=commission_pct,
+                    current_user=current_user
+                )
+            except MissingPricesError as e:
+                # Never save a quote with guessed prices: undo the whole save and say what's missing.
+                raise serializers.ValidationError({
+                    "detail": "This quote can't be saved: some prices are missing. Add them, then save again.",
+                    "missing_prices": e.missing,
+                })
             schedule_warm(new_version.id)  # pre-build the guest PDF once saved
             
             # Update grand total kwenye ClientRequestInformation (kwa summary)

@@ -54,14 +54,14 @@ def dashboard_callback(request, context):
     if not has_default and no_own_rate:
         attention.append({
             "text": f"{no_own_rate} compan{'y has' if no_own_rate == 1 else 'ies have'} no vehicle price and no default "
-                    "is set — their quotes use $250/day.",
+                    "is set — their quotes can't be saved until one is.",
             "action": "Set default price", "url": _link("Configuration", "configurationdata"),
             "level": "danger",
         })
     no_rates = Accommodation.objects.annotate(n=Count("room_type__rates")).filter(n=0).count()
     if no_rates:
         attention.append({
-            "text": f"{no_rates} lodge(s) have no room rates — they add $0 to quotes.",
+            "text": f"{no_rates} lodge(s) have no room rates — quotes using them can't be saved.",
             "action": "Review lodges", "url": _link("Accommodation", "accommodation"),
             "level": "danger",
         })

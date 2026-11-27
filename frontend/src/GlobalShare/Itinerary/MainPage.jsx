@@ -10,6 +10,7 @@ import api from "../../Apis/api";
 import { toast } from 'react-toastify';
 import SmartPricingBreakdownGlobal from "../Itinerary/BreakDown/PriceBreakDown"
 import useItineraryPricingGlobal from "./Hooks/useItineraryPrice";
+import MissingPricesNotice from "./BreakDown/MissingPricesNotice";
 
 import { 
   Plus, 
@@ -312,6 +313,12 @@ export default function ItineraryMainGlobal() {
   // ==========================================
   const handleBulkSave = async (e) => {
     e.preventDefault();
+
+    // Prices nobody has entered are never guessed: list them instead of saving.
+    if (pricing.missing?.length) {
+      toast.error(`Can't save yet: ${pricing.missing.length} price${pricing.missing.length > 1 ? "s are" : " is"} missing. See the red list above the price.`);
+      return;
+    }
 
     // Validation: Ensure all days except the final departure day have a destination
     const hasMissingDestination = enrichedDays.some((d, index) => !d.destination && index !== enrichedDays.length - 1);
@@ -798,6 +805,8 @@ return (
         {/* Ambient glows */}
         <div className="pointer-events-none absolute -top-24 -left-20 w-56 h-56 bg-[#E8772E]/15 l blur-3xl" />
         <div className="pointer-events-none absolute -bottom-24 -right-20 w-56 h-56 bg-[#F2B544]/10 l blur-3xl" />
+
+        <MissingPricesNotice missing={pricing.missing} className="mb-5" />
 
         {/* Header */}
         <div className="flex items-center justify-between border-b border-[#E4DCCB]/15 pb-4 mb-5 relative z-10">

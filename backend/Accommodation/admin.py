@@ -101,7 +101,7 @@ class AdminAccommodation(ModelAdmin):
     def rates_count(self, obj):
         n = RoomRate.objects.filter(room_type__accommodation=obj).count()
         if n == 0:
-            return format_html('<span style="color:#dc2626;font-weight:600">None — adds $0 to quotes</span>')
+            return format_html('<span style="color:#dc2626;font-weight:600">None — quotes can\'t be saved</span>')
         return n
 
     @display(description="Sponsored", boolean=True)

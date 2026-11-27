@@ -23,6 +23,8 @@ const EMPTY = {
   perPerson: 0,
   totalTravellers: 0,
   vehicleDetails: { vehiclesNeeded: 0, totalDays: 0, dailyRate: 0, totalCost: 0, source: null },
+  missing: [],
+  canSave: true,
 };
 
 const TYPE_BY_CATEGORY = {
@@ -79,6 +81,9 @@ function toScreenShape(data, nightsByDay) {
       totalCost: num(t.vehicle),
       source: data.vehicle_rate_source,
     },
+    // Prices that don't exist yet: shown in red, and the quote can't be saved.
+    missing: data.missing || [],
+    canSave: data.can_save !== false,
   };
 }
 
@@ -88,7 +93,7 @@ function toScreenShape(data, nightsByDay) {
  * @param commissionPercentage  e.g. 10 for 10%
  * @param clientId    tour request id (defaults to clientInfo.id)
  * @returns pricing in the same shape the screens already use, plus
- *          commissionAmount, grandTotal, perPerson, isCalculating, error
+ *          commissionAmount, grandTotal, perPerson, missing, canSave, isCalculating, error
  */
 export default function useItineraryPricingGlobal(dayConfigs, clientInfo, commissionPercentage = 0, clientId = null) {
   const [result, setResult] = useState(EMPTY);

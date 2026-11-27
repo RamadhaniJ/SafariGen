@@ -73,10 +73,13 @@ class AdminItineraryVersion(ModelAdmin):
 
     def save_model(self, request, obj, form, change):
         super().save_model(request, obj, form, change)
-        for version, old, new in getattr(obj, "_repriced", []):
-            if old is not None and old != new:
+        for r in getattr(obj, "_repriced", []):
+            if r.missing:
+                self.message_user(request, "Quote reopened, but it keeps its old price because prices are missing: "
+                                           + " ".join(m["message"] for m in r.missing), messages.WARNING)
+            elif r.old_total is not None and r.old_total != r.new_total:
                 self.message_user(request, f"Quote reopened and re-priced with current rates: "
-                                           f"${old:,.2f} → ${new:,.2f}", messages.SUCCESS)
+                                           f"${r.old_total:,.2f} → ${r.new_total:,.2f}", messages.SUCCESS)
 
     @action(description="Recalculate prices with current rates")
     def recalculate_prices(self, request, queryset):
@@ -85,10 +88,12 @@ class AdminItineraryVersion(ModelAdmin):
         from Itinerary.pricing import reprice_versions
 
         changed = []
-        for version, old_total, new_total in reprice_versions(
+        for version, old_total, new_total, missing in reprice_versions(
                 queryset.select_related("client_request"), current_user=request.user):
             label = f"{version.client_request.tour_code} v{version.version_number}"
-            if old_total is None:
+            if missing:
+                changed.append(f"{label}: NOT re-priced, missing — " + " ".join(m["message"] for m in missing))
+            elif old_total is None:
                 changed.append(f"{label}: priced at ${new_total:,.2f}")
             elif new_total != old_total:
                 changed.append(f"{label}: ${old_total:,.2f} → ${new_total:,.2f}")
